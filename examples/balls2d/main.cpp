@@ -154,21 +154,26 @@ int main(int argc, char ** argv) {
 	printf("Usage: %s [port] [httpRoot] [nBalls]\n", argv[0]);
 
     int port = argc > 1 ? atoi(argv[1]) : 3000;
-    std::string httpRoot = argc > 2 ? argv[2] : "../_deps/incppect-src/examples";
+    std::string httpRoot = argc > 2 ? argv[2] : "./_deps/incppect-src/examples";
     int nBalls = argc > 3 ? atoi(argv[3]) : 64;
     nBalls = std::max(1, std::min(128, nBalls));
     State state;
     state.init(nBalls);
 
-    httpRoot = fs::absolute(httpRoot).string();
+    // defined the project directory
+    httpRoot = fs::absolute(".").string();
+    httpRoot = std::format("{}/_deps/incppect-src/examples",remove_token(httpRoot, "/bin/."));
     auto resource_path = std::format("{}/balls2d/index.html", httpRoot);
     if (not resource_exists(resource_path, "balls2d")) std::exit(1);
 
-    incppect::Parameters parameters;
-    parameters.portListen = port;
-    parameters.maxPayloadLength_bytes = 256*1024;
-    parameters.httpRoot = httpRoot + "/balls2d";
-    parameters.resources = { "", "index.html", };
+    std::cout << "\nurl: localhost:" << port << std::endl;
+
+  incppect::Parameters parameters{
+        .portListen = port,
+        .maxPayloadLength_bytes = 256 * 1024,
+        .httpRoot = httpRoot + "/balls2d",
+        .resources = {"", "index.html"}
+    };
 
     incppect::getInstance().runAsync(parameters).detach();
 
