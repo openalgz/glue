@@ -47,12 +47,12 @@ var incppect = {
         rx_bytes: 0,
     },
 
-    timestamp: function() {
+    timestamp: function () {
         return window.performance && window.performance.now && window.performance.timing &&
             window.performance.timing.navigationStart ? window.performance.now() + window.performance.timing.navigationStart : Date.now();
     },
 
-    init: function() {
+    init: function () {
         var onopen = this.onopen.bind(this);
         var onclose = this.onclose.bind(this);
         var onmessage = this.onmessage.bind(this);
@@ -60,10 +60,10 @@ var incppect = {
 
         this.ws = new WebSocket(this.ws_uri);
         this.ws.binaryType = 'arraybuffer';
-        this.ws.onopen = function(evt) { onopen(evt) };
-        this.ws.onclose = function(evt) { onclose(evt) };
-        this.ws.onmessage = function(evt) { onmessage(evt) };
-        this.ws.onerror = function(evt) { onerror(evt) };
+        this.ws.onopen = function (evt) { onopen(evt) };
+        this.ws.onclose = function (evt) { onclose(evt) };
+        this.ws.onmessage = function (evt) { onmessage(evt) };
+        this.ws.onerror = function (evt) { onerror(evt) };
 
         this.t_start_ms = this.timestamp();
         this.t_requests_last_update_ms = this.timestamp() - this.k_requests_update_freq_ms;
@@ -71,7 +71,7 @@ var incppect = {
         window.requestAnimationFrame(this.loop.bind(this));
     },
 
-    loop: function() {
+    loop: function () {
         if (this.ws == null) {
             if (this.k_auto_reconnect) {
                 setTimeout(this.init.bind(this), 1000);
@@ -94,7 +94,7 @@ var incppect = {
 
         try {
             this.render();
-        } catch(err) {
+        } catch (err) {
             this.onerror('Failed to render state: ' + err);
         }
 
@@ -110,7 +110,7 @@ var incppect = {
         window.requestAnimationFrame(this.loop.bind(this));
     },
 
-    get: function(path, ...args) {
+    get: function (path, ...args) {
         for (var i = 1; i < arguments.length; i++) {
             path = path.replace('%d', arguments[i]);
         }
@@ -131,83 +131,83 @@ var incppect = {
         return this.vars_map[path];
     },
 
-    get_abuf: function(path, ...args) {
+    get_abuf: function (path, ...args) {
         return this.get(path, ...args);
     },
 
-    get_int8: function(path, ...args) {
+    get_int8: function (path, ...args) {
         return this.get_int8_arr(path, ...args)[0];
     },
 
-    get_int8_arr: function(path, ...args) {
+    get_int8_arr: function (path, ...args) {
         var abuf = this.get(path, ...args);
         return new Int8Array(abuf);
     },
 
-    get_uint8: function(path, ...args) {
+    get_uint8: function (path, ...args) {
         return this.get_uint8_arr(path, ...args)[0];
     },
 
-    get_uint8_arr: function(path, ...args) {
+    get_uint8_arr: function (path, ...args) {
         var abuf = this.get(path, ...args);
         return new Uint8Array(abuf);
     },
 
-    get_int16: function(path, ...args) {
+    get_int16: function (path, ...args) {
         return this.get_int16_arr(path, ...args)[0];
     },
 
-    get_int16_arr: function(path, ...args) {
+    get_int16_arr: function (path, ...args) {
         var abuf = this.get(path, ...args);
         return new Int16Array(abuf);
     },
 
-    get_uint16: function(path, ...args) {
+    get_uint16: function (path, ...args) {
         return this.get_uint16_arr(path, ...args)[0];
     },
 
-    get_uint16_arr: function(path, ...args) {
+    get_uint16_arr: function (path, ...args) {
         var abuf = this.get(path, ...args);
         return new Uint16Array(abuf);
     },
 
-    get_int32: function(path, ...args) {
+    get_int32: function (path, ...args) {
         return this.get_int32_arr(path, ...args)[0];
     },
 
-    get_int32_arr: function(path, ...args) {
+    get_int32_arr: function (path, ...args) {
         var abuf = this.get(path, ...args);
         return new Int32Array(abuf);
     },
 
-    get_uint32: function(path, ...args) {
+    get_uint32: function (path, ...args) {
         return this.get_uint32_arr(path, ...args)[0];
     },
 
-    get_uint32_arr: function(path, ...args) {
+    get_uint32_arr: function (path, ...args) {
         var abuf = this.get(path, ...args);
         return new Uint32Array(abuf);
     },
 
-    get_float: function(path, ...args) {
+    get_float: function (path, ...args) {
         return this.get_float_arr(path, ...args)[0];
     },
 
-    get_float_arr: function(path, ...args) {
+    get_float_arr: function (path, ...args) {
         var abuf = this.get(path, ...args);
         return new Float32Array(abuf);
     },
 
-    get_double: function(path, ...args) {
+    get_double: function (path, ...args) {
         return this.get_double_arr(path, ...args)[0];
     },
 
-    get_double_arr: function(path, ...args) {
+    get_double_arr: function (path, ...args) {
         var abuf = this.get(path, ...args);
         return new Float64Array(abuf);
     },
 
-    get_str: function(path, ...args) {
+    get_str: function (path, ...args) {
         var abuf = this.get(path, ...args);
         var enc = new TextDecoder("utf-8");
         var res = enc.decode(new Uint8Array(abuf));
@@ -221,7 +221,7 @@ var incppect = {
         return output;
     },
 
-    send: function(msg) {
+    send: function (msg) {
         var enc_msg = new TextEncoder().encode(msg);
         var data = new Int8Array(4 + enc_msg.length + 1);
         data[0] = 4;
@@ -233,13 +233,13 @@ var incppect = {
         this.stats.tx_bytes += data.length;
     },
 
-    send_var_to_id_map: function() {
+    send_var_to_id_map: function () {
         var msg = '';
         var delim = this.k_var_delim;
         for (var key in this.var_to_id) {
             var nidxs = 0;
             var idxs = delim;
-            var keyp = key.replace(/\[-?\d*\]/g, function(m) { ++nidxs; idxs += m.replace(/[\[\]]/g, '') + delim; return '[%d]'; });
+            var keyp = key.replace(/\[-?\d*\]/g, function (m) { ++nidxs; idxs += m.replace(/[\[\]]/g, '') + delim; return '[%d]'; });
             msg += keyp + delim + this.var_to_id[key].toString() + delim + nidxs + idxs;
         }
         var data = new Int8Array(4 + msg.length + 1);
@@ -253,9 +253,9 @@ var incppect = {
         this.stats.tx_bytes += data.length;
     },
 
-    send_requests: function() {
+    send_requests: function () {
         var same = true;
-        if (this.requests_old === null || this.requests.length !== this.requests_old.length){
+        if (this.requests_old === null || this.requests.length !== this.requests_old.length) {
             same = false;
         } else {
             for (var i = 0; i < this.requests.length; ++i) {
@@ -284,10 +284,10 @@ var incppect = {
         }
     },
 
-    onopen: function(evt) {
+    onopen: function (evt) {
     },
 
-    onclose: function(evt) {
+    onclose: function (evt) {
         this.nvars = 0;
         this.vars_map = {};
         this.var_to_id = {};
@@ -297,22 +297,22 @@ var incppect = {
         this.ws = null;
     },
 
-    onmessage: function(evt) {
+    onmessage: function (evt) {
         this.stats.rx_n += 1;
         this.stats.rx_bytes += evt.data.byteLength;
 
         var type_all = (new Uint32Array(evt.data))[0];
 
         if (this.last_data != null && type_all == 1) {
-            var ntotal = evt.data.byteLength/4 - 1;
+            var ntotal = evt.data.byteLength / 4 - 1;
 
             var src_view = new Uint32Array(evt.data, 4);
             var dst_view = new Uint32Array(this.last_data, 4);
 
             var k = 0;
-            for (var i = 0; i < ntotal/2; ++i) {
-                var n = src_view[2*i + 0];
-                var c = src_view[2*i + 1];
+            for (var i = 0; i < ntotal / 2; ++i) {
+                var n = src_view[2 * i + 0];
+                var c = src_view[2 * i + 1];
                 for (var j = 0; j < n; ++j) {
                     dst_view[k] = dst_view[k] ^ c;
                     ++k;
@@ -329,22 +329,22 @@ var incppect = {
         var id = 0;
         var type = 0;
         var len = 0;
-        while (4*offset < total_size) {
+        while (4 * offset < total_size) {
             id = int_view[offset + 0];
             type = int_view[offset + 1];
             len = int_view[offset + 2];
             offset += 3;
-            offset_new = offset + len/4;
+            offset_new = offset + len / 4;
             if (type == 0) {
-                this.vars_map[this.id_to_var[id]] = this.last_data.slice(4*offset, 4*offset_new);
+                this.vars_map[this.id_to_var[id]] = this.last_data.slice(4 * offset, 4 * offset_new);
             } else {
-                var src_view = new Uint32Array(this.last_data, 4*offset);
+                var src_view = new Uint32Array(this.last_data, 4 * offset);
                 var dst_view = new Uint32Array(this.vars_map[this.id_to_var[id]]);
 
                 var k = 0;
-                for (var i = 0; i < len/8; ++i) {
-                    var n = src_view[2*i + 0];
-                    var c = src_view[2*i + 1];
+                for (var i = 0; i < len / 8; ++i) {
+                    var n = src_view[2 * i + 0];
+                    var c = src_view[2 * i + 1];
                     for (var j = 0; j < n; ++j) {
                         dst_view[k] = dst_view[k] ^ c;
                         ++k;
@@ -355,11 +355,11 @@ var incppect = {
         }
     },
 
-    onerror: function(evt) {
+    onerror: function (evt) {
         console.error("[incppect]", evt);
     },
 
-    render: function() {
+    render: function () {
     },
 }
 

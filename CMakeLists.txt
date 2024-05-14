@@ -7,21 +7,24 @@ project(incppect)
 #]]
 cmake_policy(SET CMP0077 NEW)
 
-
 option(INCPPECT_HEADER_ONLY "Use incppect header only libaries." FALSE)
 
-if (MSVC)
-	# Suppress warning C4996 (deprecated declarations) for Visual Studio
-	add_compile_options(/wd4996 /wd4100 /wd4267 /wd4996)
-elseif (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-	# Suppress warnings about deprecated OpenSSL functions and unused parameters for GCC and Clang
-	add_compile_options(
-	    -Wno-deprecated-declarations
-	    -Wunused-parameter
-	    -Wno-sign-compare
-	    -Wno-unused-parameter
-)
-endif()
+macro(hide_warnings)
+    if (MSVC)
+        # Suppress warning C4996 (deprecated declarations) for Visual Studio
+        add_compile_options(/wd4996 /wd4100 /wd4267 /wd4996)
+    elseif (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+        # Suppress warnings about deprecated OpenSSL functions and unused parameters for GCC and Clang
+        add_compile_options(
+            -Wno-deprecated-declarations
+            -Wno-sign-compare
+            -Wno-unused-parameter
+            -Wno-unused-variable 
+    )
+    endif()
+endmacro()
+
+hide_warnings()
 
 if (IMGUI_WS_ALL_WARNINGS AND (CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
 	# Enable all warnings for GCC and Clang
