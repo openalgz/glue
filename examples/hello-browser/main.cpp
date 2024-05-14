@@ -2,22 +2,35 @@
  *  \brief incppect basics
  *  \author Georgi Gerganov
  */
-
 #include "incppect/incppect.h"
+#include "examples-common.h"
 
 using incppect = Incppect<false>;
+namespace fs = std::filesystem;
+using namespace examples;
 
 int main(int argc, char ** argv) {
 	printf("Usage: %s [port] [httpRoot]\n", argv[0]);
 
     int port = argc > 1 ? atoi(argv[1]) : 3000;
-    std::string httpRoot = argc > 2 ? argv[2] : "../examples";
+    std::string httpRoot = argc > 2 ? argv[2] : "./_deps/incppect-src/examples";
 
-    incppect::Parameters parameters;
-    parameters.portListen = port;
-    parameters.maxPayloadLength_bytes = 256*1024;
-    parameters.httpRoot = httpRoot + "/hello-browser";
-    parameters.resources = { "", "index.html", };
+    // defined the project directory
+    if (not fs::exists(httpRoot)) {
+        httpRoot = fs::absolute(".").string();
+        httpRoot = std::format("{}/_deps/incppect-src/examples",remove_token(httpRoot, "/bin/."));
+    }
+
+    auto resource_path = std::format("{}/hello-browser/index.html", httpRoot);
+    if (not resource_exists(resource_path, "hello-browser")) std::exit(1);
+    std::cout << "\nurl: localhost:" << port << std::endl;
+
+    incppect::Parameters parameters{
+        .portListen = port,
+        .maxPayloadLength_bytes = 256 * 1024,
+        .httpRoot = httpRoot + "/hello-browser",
+        .resources = {"", "index.html"}
+    };
 
     incppect::getInstance().runAsync(parameters).detach();
 
@@ -35,9 +48,9 @@ int main(int argc, char ** argv) {
     incppect::getInstance().var("var_int32", [&](auto) { return incppect::view(var_int32); });
     incppect::getInstance().var("var_int32_arr", [&](auto) { return incppect::view(var_arr32); });
     incppect::getInstance().var("var_int32_arr[%d]", [&](auto idxs) { return incppect::view(var_arr32[idxs[0]]); });
-    incppect::getInstance().var("var_float", [&](auto idxs) { return incppect::view(var_float); });
-    incppect::getInstance().var("var_double", [&](auto idxs) { return incppect::view(var_double); });
-    incppect::getInstance().var("var_str", [&](auto idxs) { return var_str; });
+    incppect::getInstance().var("var_float", [&](auto ) { return incppect::view(var_float); });
+    incppect::getInstance().var("var_double", [&](auto ) { return incppect::view(var_double); });
+    incppect::getInstance().var("var_str", [&](auto ) { return var_str; });
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));

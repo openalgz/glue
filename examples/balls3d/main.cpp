@@ -4,12 +4,15 @@
  */
 
 #include "incppect/incppect.h"
+#include "examples-common.h"
 
 #include <cmath>
 #include <vector>
 #include <cstdlib>
 
 using incppect = Incppect<false>;
+namespace fs = std::filesystem;
+using namespace examples;
 
 inline float frand() { return (float)(rand())/RAND_MAX; }
 
@@ -36,16 +39,16 @@ float dist2(const Ball & c0, const Ball & c1) {
 
 struct State {
     State() {
-        incppect::getInstance().var("state.dt", [this](const auto & idxs) { return incppect::view(dt); });
+        incppect::getInstance().var("state.dt", [this](const auto &) { return incppect::view(dt); });
 
-        incppect::getInstance().var("state.nballs", [this](const auto & idxs) {
+        incppect::getInstance().var("state.nballs", [this](const auto &) {
             static int n = 0;
             n = balls.size();
             return incppect::view(n);
         });
 
-        incppect::getInstance().var("state.dt", [this](const auto & idxs) { return incppect::view(dt); });
-        incppect::getInstance().var("state.energy", [this](const auto & idxs) { return incppect::view(energy); });
+        incppect::getInstance().var("state.dt", [this](const auto &) { return incppect::view(dt); });
+        incppect::getInstance().var("state.energy", [this](const auto &) { return incppect::view(energy); });
 
         incppect::getInstance().var("state.ball[%d].r", [this](const auto & idxs) { return incppect::view(balls[idxs[0]].r); });
         incppect::getInstance().var("state.ball[%d].m", [this](const auto & idxs) { return incppect::view(balls[idxs[0]].m); });
@@ -169,8 +172,8 @@ struct State {
 int main(int argc, char ** argv) {
 	printf("Usage: %s [port] [httpRoot] [nBalls]\n", argv[0]);
 
-    int port = argc > 1 ? atoi(argv[1]) : 3000;
-    std::string httpRoot = argc > 2 ? argv[2] : "../examples";
+    int port = argc > 1 ? atoi(argv[1]) : 3003;
+    std::string httpRoot = argc > 2 ? argv[2] : "./_deps/incppect-src/examples";
     int nBalls = argc > 3 ? atoi(argv[3]) : 64;
 
     nBalls = std::max(1, std::min(128, nBalls));
@@ -178,11 +181,21 @@ int main(int argc, char ** argv) {
     State state;
     state.init(nBalls);
 
-    incppect::Parameters parameters;
-    parameters.portListen = port;
-    parameters.maxPayloadLength_bytes = 256*1024;
-    parameters.httpRoot = httpRoot + "/balls3d";
-    parameters.resources = { "", "index.html", };
+    if (not fs::exists(httpRoot)) {
+        httpRoot = fs::absolute(".").string();
+        httpRoot = std::format("{}/_deps/incppect-src/examples",remove_token(httpRoot, "/bin/."));
+    }
+
+    auto resource_path = std::format("{}/balls3d/index.html", httpRoot);
+    if (not resource_exists(resource_path, "balls3d")) std::exit(1);
+    std::cout << "\nurl: localhost:" << port << std::endl;
+
+    incppect::Parameters parameters{
+        .portListen = port,
+        .maxPayloadLength_bytes = 256 * 1024,
+        .httpRoot = httpRoot + "/balls3d",
+        .resources = {"", "index.html"}
+    };
 
     incppect::getInstance().runAsync(parameters).detach();
 
