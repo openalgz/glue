@@ -31,6 +31,8 @@ namespace
    }
 }
 
+using namespace incpp;
+
 template <bool SSL>
 struct Incppect<SSL>::Impl
 {
@@ -600,5 +602,5 @@ void Incppect<SSL>::handler(THandler&& handler)
    m_impl->handler = std::move(handler);
 }
 
-template class Incppect<false>;
-template class Incppect<true>;
+template class incpp::Incppect<false>;
+template class incpp::Incppect<true>;

@@ -5,7 +5,7 @@
 #include "incppect/incppect.h"
 #include "examples-common.h"
 
-using incppect = Incppect<false>;
+using incppect = incpp::Incppect<false>;
 namespace fs = std::filesystem;
 using namespace examples;
 
@@ -19,6 +19,7 @@ int main(int argc, char ** argv) {
     if (not fs::exists(httpRoot)) {
         httpRoot = fs::absolute(".").string();
         httpRoot = std::format("{}/_deps/incppect-src/examples",remove_token(httpRoot, "/bin/."));
+        httpRoot = in_place_replace(httpRoot, "/./", "/build/");
     }
 
     auto resource_path = std::format("{}/hello-browser/index.html", httpRoot);

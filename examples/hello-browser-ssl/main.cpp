@@ -10,7 +10,7 @@ namespace fs = std::filesystem;
 using namespace examples;
 
 // using SSL
-using incppect = Incppect<true>;
+using incppect = incpp::Incppect<true>;
 
 int main(int argc, char ** argv) {
 	printf("Usage: %s [port] [httpRoot]\n", argv[0]);
@@ -22,6 +22,7 @@ int main(int argc, char ** argv) {
     if (not fs::exists(httpRoot)) {
         httpRoot = fs::absolute(".").string();
         httpRoot = std::format("{}/_deps/incppect-src/examples",remove_token(httpRoot, "/bin/."));
+        httpRoot = in_place_replace(httpRoot, "/./", "/build/");
     }
 
     auto resource_path = std::format("{}/hello-browser-ssl/index.html", httpRoot);
