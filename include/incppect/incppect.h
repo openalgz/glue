@@ -13,6 +13,25 @@
 #include <vector>
 namespace incpp
 {
+
+   struct Parameters
+      {
+         int32_t portListen = 3000;
+         int32_t maxPayloadLength_bytes = 256 * 1024;
+         int64_t tLastRequestTimeout_ms = 3000;
+         int32_t tIdleTimeout_s = 120;
+
+         std::string httpRoot = ".";
+         std::vector<std::string> resources;
+
+         std::string sslKey = "key.pem";
+         std::string sslCert = "cert.pem";
+
+         // todo:
+         // max clients
+         // max buffered amount
+         // etc.
+      };
    template <bool SSL>
    class Incppect
    {
@@ -31,24 +50,7 @@ namespace incpp
       using THandler = std::function<void(int clientId, EventType etype, std::string_view)>;
 
       // service parameters
-      struct Parameters
-      {
-         int32_t portListen = 3000;
-         int32_t maxPayloadLength_bytes = 256 * 1024;
-         int64_t tLastRequestTimeout_ms = 3000;
-         int32_t tIdleTimeout_s = 120;
-
-         std::string httpRoot = ".";
-         std::vector<std::string> resources;
-
-         std::string sslKey = "key.pem";
-         std::string sslCert = "cert.pem";
-
-         // todo:
-         // max clients
-         // max buffered amount
-         // etc.
-      };
+      
 
       Incppect();
       ~Incppect();

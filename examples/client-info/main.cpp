@@ -2,8 +2,6 @@
  *  \brief incppect basics
  *  \author Georgi Gerganov
  */
-
-#include "incppect/incppect.h"
 #include "examples-common.h"
 
 using incppect = incpp::Incppect<false>;
@@ -14,25 +12,8 @@ int main(int argc, char ** argv) {
 	printf("Usage: %s [port] [httpRoot]\n", argv[0]);
 
     int port = argc > 1 ? atoi(argv[1]) : 3004;
-    std::string httpRoot = argc > 2 ? argv[2] : "./_deps/incppect-src/examples";
-
-    // defined the project directory
-    if (not fs::exists(httpRoot)) {
-        httpRoot = fs::absolute(".").string();
-        httpRoot = std::format("{}/_deps/incppect-src/examples",remove_token(httpRoot, "/bin/."));
-        httpRoot = in_place_replace(httpRoot, "/./", "/build/");
-    }
-
-    auto resource_path = std::format("{}/client-info/index.html", httpRoot);
-    if (not resource_exists(resource_path, "client-info")) std::exit(1);
-    std::cout << "\nurl: localhost:" << port << std::endl;
-
-    incppect::Parameters parameters{
-        .portListen = port,
-        .maxPayloadLength_bytes = 256 * 1024,
-        .httpRoot = httpRoot + "/client-info",
-        .resources = {"", "index.html"}
-    };
+ 
+    auto parameters = configure_incppect_example(argc, argv, "client-info", port);
 
     incppect::getInstance().runAsync(parameters).detach();
 
