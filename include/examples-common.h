@@ -31,6 +31,29 @@ namespace examples
    concept is_filesystem_path_or_string =
       std::is_same_v<std::decay_t<StrT_Or_PathT>, std::filesystem::path> || is_string<StrT_Or_PathT>;
 
+   template <is_string T>
+   T& replace_substring_in_source(T& source, const std::string_view substr_to_replace, const std::string_view new_str)
+   {
+      size_t pos = 0;
+      while ((pos = source.find(substr_to_replace, pos)) != T::npos) {
+         source.replace(pos, substr_to_replace.length(), new_str);
+         pos += new_str.length();
+      }
+      return source;
+   }
+
+   template <is_string T>
+   T& replace(const T& str, const std::string_view substr_to_replace, const std::string_view new_str)
+   {
+      T str_ = str;
+      size_t pos = 0;
+      while ((pos = str_.find(substr_to_replace, pos)) != T::npos) {
+         str_.replace(pos, substr_to_replace.length(), new_str);
+         pos += new_str.length();
+      }
+      return str_;
+   }
+
    template <is_filesystem_path_or_string StrT_Or_PathT>
    std::string truncate_directory_path_at_last_folder(const StrT_Or_PathT& path)
    {
@@ -66,7 +89,8 @@ namespace examples
    {
       namespace fs = std::filesystem;
       if (not fs::exists(resource_path)) {
-         std::cerr << "Resource path '" << resource_path << "' does not exist.\nExiting " << runtime_name << "." << std::endl;
+         std::cerr << "Resource path '" << resource_path << "' does not exist.\nExiting " << runtime_name << "."
+                   << std::endl;
          return false;
       }
       return true;
@@ -77,12 +101,20 @@ namespace examples
    {
       namespace fs = std::filesystem;
 
+#ifdef __APPLE__
       auto httpRoot = std::filesystem::current_path().generic_string();
+      std::vector<std::string> buildtypes{"Debug", "Release", "MinSizeRel", "RelWithDebInfo"};
+      for (const auto& type : buildtypes) {
+         replace_substring_in_source(httpRoot, type, std::format("/build/bin/{}", type));
+      }
+#else
+      auto httpRoot = std::filesystem::current_path().generic_string();
+#endif
 
       // Sadly "build" is hard coded here for the project generation directory.
       // Long story short is to support various Visual Code IDE modes this is
-      // being required (to simplify the code here). Otherwise Visual Code will 
-      // hand off inconsistent paths from std::current_directory and absolute 
+      // being required (to simplify the code here). Otherwise Visual Code will
+      // hand off inconsistent paths from std::current_directory and absolute
       // when running from the debugger vs terminal mode startup.
       //
       httpRoot = std::format("{}/build/_deps/incppect-src/examples", httpRoot);
