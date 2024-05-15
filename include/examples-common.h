@@ -105,7 +105,7 @@ namespace examples
       auto httpRoot = std::filesystem::current_path().generic_string();
       std::vector<std::string> buildtypes{"Debug", "Release", "MinSizeRel", "RelWithDebInfo"};
       for (const auto& type : buildtypes) {
-         replace_substring_in_source(httpRoot, type, std::format("/build/bin/{}", type));
+         replace_substring_in_source(httpRoot, std::format("/build/bin/{}", type), "");
       }
 #else
       auto httpRoot = std::filesystem::current_path().generic_string();
