@@ -66,18 +66,31 @@ namespace examples
    {
       namespace fs = std::filesystem;
       if (not fs::exists(resource_path)) {
-         std::cerr << "Resource path '" << resource_path << "' does not exist.\nExiting " << runtime_name << ".";
+         std::cerr << "Resource path '" << resource_path << "' does not exist.\nExiting " << runtime_name << "." << std::endl;
          return false;
       }
       return true;
    }
 
-   inline incpp::Parameters configure_incppect_example(int argc, char* argv[], const std::string_view example_name, int port,
-                                             const std::string_view index_file_name = "index.html")
+   inline incpp::Parameters configure_incppect_example(int argc, char* argv[], const std::string_view example_name,
+                                                       int port, const std::string_view index_file_name = "index.html")
    {
-      std::string httpRoot =
-         argc > 2 ? argv[2] : truncate_directory_path_at_last_folder(std::filesystem::current_path());
-      httpRoot = std::format("{}/_deps/incppect-src/examples", httpRoot);
+      namespace fs = std::filesystem;
+
+      auto httpRoot = std::filesystem::current_path().generic_string();
+
+      // Sadly "build" is hard coded here for the project generation directory.
+      // Long story short is to support various Visual Code IDE modes this is
+      // being required (to simplify the code here). Otherwise Visual Code will 
+      // hand off inconsistent paths from std::current_directory and absolute 
+      // when running from the debugger vs terminal mode startup.
+      //
+      httpRoot = std::format("{}/build/_deps/incppect-src/examples", httpRoot);
+
+      if (not fs::exists(httpRoot)) {
+         httpRoot = argc > 2 ? argv[2] : truncate_directory_path_at_last_folder(std::filesystem::current_path());
+         httpRoot = std::format("{}/_deps/incppect-src/examples", httpRoot);
+      }
 
       auto resource_path = std::format("{}/{}/{}", httpRoot, example_name, index_file_name);
       if (not resource_exists(resource_path, example_name)) std::exit(1);
