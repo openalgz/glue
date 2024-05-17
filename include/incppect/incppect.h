@@ -518,7 +518,7 @@ namespace incpp
                      {
                         char v = 0;
                         for (int i = 0; i < padding_bytes; ++i) {
-                           std::copy((char*)(&v), (char*)(&v) + sizeof(v), std::back_inserter(curBuffer));
+                           curBuffer.append((char*)(&v), sizeof(v));
                         }
                      }
                   }
@@ -530,16 +530,16 @@ namespace incpp
                      req.diffData.clear();
 
                      for (int i = 0; i < (int)req.curData.size(); i += 4) {
-                        std::memcpy((char*)(&a), req.prevData.data() + i, sizeof(uint32_t));
-                        std::memcpy((char*)(&b), req.curData.data() + i, sizeof(uint32_t));
+                        std::memcpy(&a, req.prevData.data() + i, sizeof(uint32_t));
+                        std::memcpy(&b, req.curData.data() + i, sizeof(uint32_t));
                         a = a ^ b;
                         if (a == c) {
                            ++n;
                         }
                         else {
                            if (n > 0) {
-                              std::copy((char*)(&n), (char*)(&n) + sizeof(uint32_t), std::back_inserter(req.diffData));
-                              std::copy((char*)(&c), (char*)(&c) + sizeof(uint32_t), std::back_inserter(req.diffData));
+                              req.diffData.append((char*)(&n), sizeof(uint32_t));
+                              req.diffData.append((char*)(&c), sizeof(uint32_t));
                            }
                            n = 1;
                            c = a;
@@ -551,31 +551,29 @@ namespace incpp
                         b = 0;
                         uint32_t i = (req.curData.size() / 4) * 4;
                         uint32_t k = req.curData.size() - i;
-                        std::memcpy((char*)(&a), req.prevData.data() + i, k);
-                        std::memcpy((char*)(&b), req.curData.data() + i, k);
+                        std::memcpy(&a, req.prevData.data() + i, k);
+                        std::memcpy(&b, req.curData.data() + i, k);
                         a = a ^ b;
                         if (a == c) {
                            ++n;
                         }
                         else {
-                           std::copy((char*)(&n), (char*)(&n) + sizeof(uint32_t), std::back_inserter(req.diffData));
-                           std::copy((char*)(&c), (char*)(&c) + sizeof(uint32_t), std::back_inserter(req.diffData));
+                           req.diffData.append((char*)(&n), sizeof(uint32_t));
+                           req.diffData.append((char*)(&c), sizeof(uint32_t));
                            n = 1;
                            c = a;
                         }
                      }
 
-                     std::copy((char*)(&n), (char*)(&n) + sizeof(uint32_t), std::back_inserter(req.diffData));
-                     std::copy((char*)(&c), (char*)(&c) + sizeof(uint32_t), std::back_inserter(req.diffData));
+                     req.diffData.append((char*)(&n), sizeof(uint32_t));
+                     req.diffData.append((char*)(&c), sizeof(uint32_t));
 
                      dataSize_bytes = req.diffData.size();
-                     std::copy((char*)(&dataSize_bytes), (char*)(&dataSize_bytes) + sizeof(dataSize_bytes),
-                               std::back_inserter(curBuffer));
-                     std::copy(req.diffData.begin(), req.diffData.end(), std::back_inserter(curBuffer));
+                     curBuffer.append((char*)(&dataSize_bytes), sizeof(dataSize_bytes));
+                     curBuffer.append(req.diffData);
                   }
 
-                  req.prevData.resize(req.curData.size());
-                  std::copy(req.curData.begin(), req.curData.end(), req.prevData.begin());
+                  req.prevData = req.curData;
                }
             }
 
