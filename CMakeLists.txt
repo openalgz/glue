@@ -64,8 +64,6 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/js/incppect.js" src_incppect_js)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/incppect/common.h.in ${CMAKE_CURRENT_SOURCE_DIR}/include/incppect/common.h @ONLY)
 
-message("INCPPECT_HEADER_ONLY is defined.")
-add_definitions(-DINCPPECT_HEADER_ONLY)
 add_library(incppect_incppect INTERFACE)
 
 add_library(incppect::incppect ALIAS incppect_incppect)
