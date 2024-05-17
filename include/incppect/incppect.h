@@ -586,27 +586,27 @@ namespace incpp
                   diffBuffer.clear();
 
                   uint32_t typeAll = 1;
-                  std::copy((char*)(&typeAll), (char*)(&typeAll) + sizeof(typeAll), std::back_inserter(diffBuffer));
+                  diffBuffer.append((char*)(&typeAll), sizeof(typeAll));
 
                   for (int i = 4; i < (int)curBuffer.size(); i += 4) {
-                     std::memcpy((char*)(&a), prevBuffer.data() + i, sizeof(uint32_t));
-                     std::memcpy((char*)(&b), curBuffer.data() + i, sizeof(uint32_t));
+                     std::memcpy(&a, prevBuffer.data() + i, sizeof(uint32_t));
+                     std::memcpy(&b, curBuffer.data() + i, sizeof(uint32_t));
                      a = a ^ b;
                      if (a == c) {
                         ++n;
                      }
                      else {
                         if (n > 0) {
-                           std::copy((char*)(&n), (char*)(&n) + sizeof(uint32_t), std::back_inserter(diffBuffer));
-                           std::copy((char*)(&c), (char*)(&c) + sizeof(uint32_t), std::back_inserter(diffBuffer));
+                           diffBuffer.append((char*)(&n), sizeof(uint32_t));
+                           diffBuffer.append((char*)(&c), sizeof(uint32_t));
                         }
                         n = 1;
                         c = a;
                      }
                   }
 
-                  std::copy((char*)(&n), (char*)(&n) + sizeof(uint32_t), std::back_inserter(diffBuffer));
-                  std::copy((char*)(&c), (char*)(&c) + sizeof(uint32_t), std::back_inserter(diffBuffer));
+                  diffBuffer.append((char*)(&n), sizeof(uint32_t));
+                  diffBuffer.append((char*)(&c), sizeof(uint32_t));
 
                   if ((int32_t)diffBuffer.size() > parameters.maxPayloadLength_bytes) {
                      my_printf("[incppect] warning: buffer size (%d) exceeds maxPayloadLength (%d)\n",
@@ -638,8 +638,7 @@ namespace incpp
 
                txTotal_bytes += curBuffer.size();
 
-               prevBuffer.resize(curBuffer.size());
-               std::copy(curBuffer.begin(), curBuffer.end(), prevBuffer.begin());
+               prevBuffer = curBuffer;
             }
          }
       }
