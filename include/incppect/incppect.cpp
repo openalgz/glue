@@ -1,16 +1,4 @@
-/*! \file incppect.cpp
- *  \brief Enter description here.
- *  \author Georgi Gerganov
- */
-
 #include "incppect/incppect.h"
-
-#include <algorithm>
-#include <chrono>
-#include <fstream>
-#include <map>
-#include <sstream>
-#include <string>
 
 #include "App.h" // uWebSockets
 #include "common.h"

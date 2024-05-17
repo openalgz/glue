@@ -1,37 +1,37 @@
-/*! \file incppect.h
- *  \brief Enter description here.
- *  \author Georgi Gerganov
- */
-
 #pragma once
 
+#include <algorithm>
+#include <chrono>
+#include <fstream>
 #include <functional>
+#include <map>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <thread>
 #include <vector>
+
 namespace incpp
 {
-
    struct Parameters
-      {
-         int32_t portListen = 3000;
-         int32_t maxPayloadLength_bytes = 256 * 1024;
-         int64_t tLastRequestTimeout_ms = 3000;
-         int32_t tIdleTimeout_s = 120;
+   {
+      int32_t portListen = 3000;
+      int32_t maxPayloadLength_bytes = 256 * 1024;
+      int64_t tLastRequestTimeout_ms = 3000;
+      int32_t tIdleTimeout_s = 120;
 
-         std::string httpRoot = ".";
-         std::vector<std::string> resources;
+      std::string httpRoot = ".";
+      std::vector<std::string> resources;
 
-         std::string sslKey = "key.pem";
-         std::string sslCert = "cert.pem";
+      std::string sslKey = "key.pem";
+      std::string sslCert = "cert.pem";
 
-         // todo:
-         // max clients
-         // max buffered amount
-         // etc.
-      };
+      // todo:
+      // max clients
+      // max buffered amount
+      // etc.
+   };
    template <bool SSL>
    class Incppect
    {
@@ -50,7 +50,6 @@ namespace incpp
       using THandler = std::function<void(int clientId, EventType etype, std::string_view)>;
 
       // service parameters
-      
 
       Incppect();
       ~Incppect();
