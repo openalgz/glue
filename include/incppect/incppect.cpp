@@ -1,31 +1,16 @@
 #include "incppect/incppect.h"
 
-#include "App.h" // uWebSockets
-#include "common.h"
-
 #ifdef INCPPECT_DEBUG
 #define my_printf printf
 #else
 #define my_printf(...)
 #endif
 
-namespace
-{
-   inline int64_t timestamp()
-   {
-      return std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now().time_since_epoch())
-         .count();
-   }
-}
-
 using namespace incpp;
 
 template <bool SSL>
 struct Incppect<SSL>::Impl
 {
-   using IpAddress = uint8_t[4];
-
    struct Request
    {
       int64_t tLastUpdated_ms = -1;
@@ -45,7 +30,7 @@ struct Incppect<SSL>::Impl
    {
       int64_t tConnected_ms = -1;
 
-      IpAddress ipAddress;
+      std::array<uint8_t, 4> ipAddress{};
 
       std::vector<int32_t> lastRequests;
       std::map<int32_t, Request> requests;
@@ -107,7 +92,7 @@ struct Incppect<SSL>::Impl
          my_printf("[incppect] client with id = %d connected\n", sd->clientId);
 
          if (handler) {
-            handler(sd->clientId, Connect, {(const char*)cd.ipAddress, 4});
+            handler(sd->clientId, Connect, {(const char*)cd.ipAddress.data(), 4});
          }
       };
       wsBehaviour.message = [this](auto* ws, std::string_view message, uWS::OpCode /*opCode*/) {
@@ -554,12 +539,6 @@ void Incppect<SSL>::stop()
          us_listen_socket_close(0, m_impl->listenSocket);
       });
    }
-}
-
-template <bool SSL>
-int32_t Incppect<SSL>::nConnected() const
-{
-   return m_impl->socketData.size();
 }
 
 template <bool SSL>

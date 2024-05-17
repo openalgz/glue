@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <fstream>
 #include <functional>
@@ -12,8 +13,18 @@
 #include <thread>
 #include <vector>
 
+#include "App.h" // uWebSockets
+#include "common.h"
+
 namespace incpp
 {
+   inline int64_t timestamp()
+   {
+      return std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now().time_since_epoch())
+         .count();
+   }
+
    struct Parameters
    {
       int32_t portListen = 3000;
@@ -32,10 +43,12 @@ namespace incpp
       // max buffered amount
       // etc.
    };
+
    template <bool SSL>
-   class Incppect
+   struct Incppect
    {
-     public:
+      bool debug = false; // print out debug statements
+
       enum EventType {
          Connect,
          Disconnect,
@@ -65,7 +78,7 @@ namespace incpp
       void setResource(const TUrl& url, const TResourceContent& content);
 
       // number of connected clients
-      int32_t nConnected() const;
+      int32_t nConnected() const { return m_impl->socketData.size(); }
 
       // run the incppect service main loop in dedicated thread
       // non-blocking call, returns the created std::thread
