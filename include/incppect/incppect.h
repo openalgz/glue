@@ -94,6 +94,30 @@ namespace incpp
       using TGetter = std::function<std::string_view(const std::vector<int>& idxs)>;
       using THandler = std::function<void(int clientId, EventType etype, std::string_view)>;
 
+      struct PerSocketData final
+      {
+         int32_t clientId = 0;
+         uWS::Loop* mainLoop = nullptr;
+         uWS::WebSocket<SSL, true, PerSocketData>* ws = nullptr;
+      };
+
+      Parameters parameters;
+
+      double txTotal_bytes = 0.0;
+      double rxTotal_bytes = 0.0;
+
+      std::map<std::string, int> pathToGetter;
+      std::vector<TGetter> getters;
+
+      uWS::Loop* mainLoop = nullptr;
+      us_listen_socket_t* listenSocket = nullptr;
+      std::map<int, PerSocketData*> socketData;
+      std::map<int, ClientData> clientData;
+
+      std::map<std::string, TResourceContent> resources;
+
+      THandler handler{};
+
       // service parameters
 
       Incppect()
@@ -186,14 +210,6 @@ namespace incpp
          static Incppect instance;
          return instance;
       }
-
-      struct PerSocketData
-      {
-         int32_t clientId = 0;
-
-         uWS::Loop* mainLoop = nullptr;
-         uWS::WebSocket<SSL, true, PerSocketData>* ws = nullptr;
-      };
 
       inline bool hasExt(std::string_view file, std::string_view ext)
       {
@@ -631,22 +647,5 @@ namespace incpp
             }
          }
       }
-
-      Parameters parameters;
-
-      double txTotal_bytes = 0.0;
-      double rxTotal_bytes = 0.0;
-
-      std::map<std::string, int> pathToGetter;
-      std::vector<TGetter> getters;
-
-      uWS::Loop* mainLoop = nullptr;
-      us_listen_socket_t* listenSocket = nullptr;
-      std::map<int, PerSocketData*> socketData;
-      std::map<int, ClientData> clientData;
-
-      std::map<std::string, TResourceContent> resources;
-
-      THandler handler{};
    };
 }
