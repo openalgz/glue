@@ -17,7 +17,7 @@ int main(int argc, char** argv)
    auto parameters = configure_incppect_example(argc, argv, "send", port);
 
    // handle input from the clients
-   incppect::getInstance().handler([&](int clientId, incppect::EventType etype, std::string_view data) {
+   incppect::getInstance().handler = [&](int clientId, incppect::EventType etype, std::string_view data) {
       switch (etype) {
       case incppect::Connect: {
          printf("Client %d connected\n", clientId);
@@ -29,7 +29,7 @@ int main(int argc, char** argv)
          printf("Client %d: '%s'\n", clientId, std::string(data.data(), data.size()).c_str());
       } break;
       };
-   });
+   };
 
    incppect::getInstance().runAsync(parameters).detach();
 
