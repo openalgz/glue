@@ -509,14 +509,12 @@ namespace incpp
                      type = 1; // run-length encoding of diff
                   }
 
-                  std::copy((char*)(&requestId), (char*)(&requestId) + sizeof(requestId),
-                            std::back_inserter(curBuffer));
-                  std::copy((char*)(&type), (char*)(&type) + sizeof(type), std::back_inserter(curBuffer));
+                  curBuffer.append((char*)(&requestId), sizeof(requestId));
+                  curBuffer.append((char*)(&type), sizeof(type));
 
                   if (type == 0) {
-                     std::copy((char*)(&dataSize_bytes), (char*)(&dataSize_bytes) + sizeof(dataSize_bytes),
-                               std::back_inserter(curBuffer));
-                     std::copy(req.curData.begin(), req.curData.end(), std::back_inserter(curBuffer));
+                     curBuffer.append((char*)(&dataSize_bytes), sizeof(dataSize_bytes));
+                     curBuffer.append(req.curData);
                      {
                         char v = 0;
                         for (int i = 0; i < padding_bytes; ++i) {
