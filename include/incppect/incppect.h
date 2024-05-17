@@ -38,12 +38,12 @@ namespace incpp
       int64_t tMinUpdate_ms = 16;
       int64_t tLastRequestTimeout_ms = 3000;
 
-      std::vector<int> idxs;
+      std::vector<int> idxs{};
       int32_t getterId = -1;
 
-      std::vector<char> prevData;
-      std::vector<char> diffData;
-      std::string_view curData;
+      std::string prevData{};
+      std::string diffData{};
+      std::string_view curData{};
    };
 
    struct ClientData
@@ -55,9 +55,9 @@ namespace incpp
       std::vector<int32_t> lastRequests;
       std::map<int32_t, Request> requests;
 
-      std::vector<char> curBuffer;
-      std::vector<char> prevBuffer;
-      std::vector<char> diffBuffer;
+      std::string curBuffer{};
+      std::string prevBuffer{};
+      std::string diffBuffer{};
    };
 
    struct Parameters
@@ -90,7 +90,6 @@ namespace incpp
          Custom,
       };
 
-      using TUrl = std::string;
       using TResourceContent = std::string;
       using TGetter = std::function<std::string_view(const std::vector<int>& idxs)>;
       using THandler = std::function<void(int clientId, EventType etype, std::string_view)>;
@@ -134,7 +133,7 @@ namespace incpp
       }
 
       // set a resource. useful for serving html/js files from within the application
-      void setResource(const TUrl& url, const TResourceContent& content) { resources[url] = content; }
+      void setResource(const std::string& url, const TResourceContent& content) { resources[url] = content; }
 
       // number of connected clients
       int32_t nConnected() const { return socketData.size(); }
@@ -164,7 +163,7 @@ namespace incpp
       }
 
       // shorthand for string_view from var
-      template <typename T>
+      template <class T>
       static std::string_view view(T& v)
       {
          if constexpr (std::is_same<T, std::string>::value) {
@@ -173,7 +172,7 @@ namespace incpp
          return std::string_view{(char*)(&v), sizeof(v)};
       }
 
-      template <typename T>
+      template <class T>
       static std::string_view view(T&& v)
       {
          static T t;
@@ -646,7 +645,7 @@ namespace incpp
       std::map<int, PerSocketData*> socketData;
       std::map<int, ClientData> clientData;
 
-      std::map<TUrl, TResourceContent> resources;
+      std::map<std::string, TResourceContent> resources;
 
       THandler handler{};
    };
