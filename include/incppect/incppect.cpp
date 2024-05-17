@@ -569,5 +569,5 @@ void Incppect<SSL>::handler(THandler&& handler)
    m_impl->handler = std::move(handler);
 }
 
-template class incpp::Incppect<false>;
-template class incpp::Incppect<true>;
+template struct incpp::Incppect<false>;
+template struct incpp::Incppect<true>;
