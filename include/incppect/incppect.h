@@ -25,6 +25,35 @@ namespace incpp
          .count();
    }
 
+   struct Request
+   {
+      int64_t tLastUpdated_ms = -1;
+      int64_t tLastRequested_ms = -1;
+      int64_t tMinUpdate_ms = 16;
+      int64_t tLastRequestTimeout_ms = 3000;
+
+      std::vector<int> idxs;
+      int32_t getterId = -1;
+
+      std::vector<char> prevData;
+      std::vector<char> diffData;
+      std::string_view curData;
+   };
+
+   struct ClientData
+   {
+      int64_t tConnected_ms = -1;
+
+      std::array<uint8_t, 4> ipAddress{};
+
+      std::vector<int32_t> lastRequests;
+      std::map<int32_t, Request> requests;
+
+      std::vector<char> curBuffer;
+      std::vector<char> prevBuffer;
+      std::vector<char> diffBuffer;
+   };
+
    struct Parameters
    {
       int32_t portListen = 3000;
@@ -57,9 +86,7 @@ namespace incpp
 
       using TUrl = std::string;
       using TResourceContent = std::string;
-      using TPath = std::string;
-      using TIdxs = std::vector<int>;
-      using TGetter = std::function<std::string_view(const TIdxs& idxs)>;
+      using TGetter = std::function<std::string_view(const std::vector<int>& idxs)>;
       using THandler = std::function<void(int clientId, EventType etype, std::string_view)>;
 
       // service parameters
@@ -92,7 +119,7 @@ namespace incpp
       //   var("path1[%d]", [](auto idxs) { ... idxs[0] ... });
       //   var("path2[%d].foo[%d]", [](auto idxs) { ... idxs[0], idxs[1] ... });
       //
-      bool var(const TPath& path, TGetter&& getter);
+      bool var(const std::string& path, TGetter&& getter);
 
       // handle input from the clients
       void handler(THandler&& handler);

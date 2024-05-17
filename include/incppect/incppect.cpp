@@ -11,35 +11,6 @@ using namespace incpp;
 template <bool SSL>
 struct Incppect<SSL>::Impl
 {
-   struct Request
-   {
-      int64_t tLastUpdated_ms = -1;
-      int64_t tLastRequested_ms = -1;
-      int64_t tMinUpdate_ms = 16;
-      int64_t tLastRequestTimeout_ms = 3000;
-
-      TIdxs idxs;
-      int32_t getterId = -1;
-
-      std::vector<char> prevData;
-      std::vector<char> diffData;
-      std::string_view curData;
-   };
-
-   struct ClientData
-   {
-      int64_t tConnected_ms = -1;
-
-      std::array<uint8_t, 4> ipAddress{};
-
-      std::vector<int32_t> lastRequests;
-      std::map<int32_t, Request> requests;
-
-      std::vector<char> curBuffer;
-      std::vector<char> prevBuffer;
-      std::vector<char> diffBuffer;
-   };
-
    struct PerSocketData
    {
       int32_t clientId = 0;
@@ -489,7 +460,7 @@ struct Incppect<SSL>::Impl
    double txTotal_bytes = 0.0;
    double rxTotal_bytes = 0.0;
 
-   std::map<TPath, int> pathToGetter;
+   std::map<std::string, int> pathToGetter;
    std::vector<TGetter> getters;
 
    uWS::Loop* mainLoop = nullptr;
@@ -505,10 +476,10 @@ struct Incppect<SSL>::Impl
 template <bool SSL>
 Incppect<SSL>::Incppect() : m_impl(new Impl())
 {
-   var("incppect.nclients", [this](const TIdxs&) { return view(m_impl->socketData.size()); });
-   var("incppect.tx_total", [this](const TIdxs&) { return view(m_impl->txTotal_bytes); });
-   var("incppect.rx_total", [this](const TIdxs&) { return view(m_impl->rxTotal_bytes); });
-   var("incppect.ip_address[%d]", [this](const TIdxs& idxs) {
+   var("incppect.nclients", [this](const std::vector<int>&) { return view(m_impl->socketData.size()); });
+   var("incppect.tx_total", [this](const std::vector<int>&) { return view(m_impl->txTotal_bytes); });
+   var("incppect.rx_total", [this](const std::vector<int>&) { return view(m_impl->rxTotal_bytes); });
+   var("incppect.ip_address[%d]", [this](const std::vector<int>& idxs) {
       auto it = m_impl->clientData.cbegin();
       std::advance(it, idxs[0]);
       return view(it->second.ipAddress);
@@ -555,7 +526,7 @@ std::thread Incppect<SSL>::runAsync(Parameters parameters)
 }
 
 template <bool SSL>
-bool Incppect<SSL>::var(const TPath& path, TGetter&& getter)
+bool Incppect<SSL>::var(const std::string& path, TGetter&& getter)
 {
    m_impl->pathToGetter[path] = m_impl->getters.size();
    m_impl->getters.emplace_back(std::move(getter));
