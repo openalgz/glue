@@ -115,8 +115,8 @@ namespace incpp
 
       uWS::Loop* mainLoop = nullptr;
       us_listen_socket_t* listenSocket = nullptr;
-      std::map<int, PerSocketData*> socketData;
-      std::map<int, ClientData> clientData;
+      std::map<int32_t, PerSocketData*> socketData;
+      std::map<int32_t, ClientData> clientData;
 
       std::map<std::string, TResourceContent> resources;
 
@@ -227,10 +227,8 @@ namespace incpp
       {
          mainLoop = uWS::Loop::get();
 
-         {
-            const char* kProtocol = SSL ? "HTTPS" : "HTTP";
-            print("[incppect] running instance. serving {} from '{}'\n", kProtocol, parameters.httpRoot);
-         }
+         constexpr std::string_view protocol = SSL ? "HTTPS" : "HTTP";
+         print("[incppect] running instance. serving {} from '{}'\n", protocol, parameters.httpRoot);
 
          typename uWS::TemplatedApp<SSL>::template WebSocketBehavior<PerSocketData> wsBehaviour;
          wsBehaviour.compression = uWS::SHARED_COMPRESSOR;
@@ -402,15 +400,15 @@ namespace incpp
             .get("/incppect.js", [](auto* res, auto* /*req*/) { res->end(kIncppect_js); });
          for (const auto& resource : parameters.resources) {
             (*app).get("/" + resource, [this](auto* res, auto* req) {
-               std::string url = std::string(req->getUrl());
+               std::string url{req->getUrl()};
                print("url = '{}'\n", url);
 
-               if (url.size() == 0) {
+               if (url.empty()) {
                   res->end("Resource not found");
                   return;
                }
 
-               if (url[url.size() - 1] == '/') {
+               if (url.back() == '/') {
                   url += "index.html";
                }
 
@@ -420,16 +418,16 @@ namespace incpp
                }
 
                print("resource = '{}'\n", (parameters.httpRoot + url));
-               std::ifstream fin(parameters.httpRoot + url);
+               std::ifstream file(parameters.httpRoot + url);
 
-               if (fin.is_open() == false || fin.good() == false) {
+               if (file.is_open() == false || file.good() == false) {
                   res->end("Resource not found");
                   return;
                }
 
-               const std::string str((std::istreambuf_iterator<char>(fin)), std::istreambuf_iterator<char>());
+               const std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-               if (str.size() == 0) {
+               if (str.empty()) {
                   res->end("Resource not found");
                   return;
                }
@@ -632,8 +630,7 @@ namespace incpp
                   }
 
                   // compress only for message larger than 64 bytes
-                  bool doCompress = buf.size() > 64;
-
+                  const bool doCompress = buf.size() > 64;
                   if (socketData[clientId]->ws->send({buf.data(), buf.size()}, uWS::OpCode::BINARY,
                                                      doCompress) == false) {
                      print("[incpeect] warning: backpressure for client {} increased \n", clientId);
