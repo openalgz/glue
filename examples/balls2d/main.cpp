@@ -153,7 +153,7 @@ struct State
 
 int main(int argc, char** argv)
 {
-   printf("Usage: %s [port] [httpRoot] [nBalls]\n", argv[0]);
+   printf("Usage: %s [port] [http_root] [nBalls]\n", argv[0]);
 
    int port = argc > 1 ? atoi(argv[1]) : 3002;
    int nBalls = argc > 3 ? atoi(argv[3]) : 64;

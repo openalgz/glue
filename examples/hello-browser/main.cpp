@@ -10,7 +10,7 @@ using namespace examples;
 
 int main(int argc, char** argv)
 {
-   printf("Usage: %s [port] [httpRoot]\n", argv[0]);
+   printf("Usage: %s [port] [http_root]\n", argv[0]);
 
    int port = argc > 1 ? atoi(argv[1]) : 3010;
 

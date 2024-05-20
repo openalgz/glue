@@ -13,15 +13,15 @@ using incppect = incpp::Incppect<true>;
 
 int main(int argc, char** argv)
 {
-   printf("Usage: %s [port] [httpRoot]\n", argv[0]);
+   printf("Usage: %s [port] [http_root]\n", argv[0]);
 
    int port = argc > 1 ? atoi(argv[1]) : 3000;
 
    auto parameters = configure_incppect_example(argc, argv, "hello-browser-ssl", port);
 
    // make sure you have generated those and they are valid
-   parameters.sslKey = "key.pem";
-   parameters.sslCert = "cert.pem";
+   parameters.ssl_key = "key.pem";
+   parameters.ssl_cert = "cert.pem";
 
    auto future = incppect::getInstance().run_async(parameters);
 

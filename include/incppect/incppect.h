@@ -32,7 +32,7 @@ namespace incpp
       int64_t tLastUpdated_ms = -1;
       int64_t tLastRequested_ms = -1;
       int64_t tMinUpdate_ms = 16;
-      int64_t tLastRequestTimeout_ms = 3000;
+      int64_t t_last_request_timeout_ms = 3000;
 
       std::vector<int> idxs{};
       int32_t getterId = -1;
@@ -44,11 +44,11 @@ namespace incpp
 
    struct ClientData
    {
-      int64_t tConnected_ms = -1;
+      int64_t t_connected_ms = -1;
 
-      std::array<uint8_t, 4> ipAddress{};
+      std::array<uint8_t, 4> ip_address{};
 
-      std::vector<int32_t> lastRequests;
+      std::vector<int32_t> last_requests;
       std::map<int32_t, Request> requests;
 
       std::string buf{}; // buffer
@@ -58,16 +58,16 @@ namespace incpp
 
    struct Parameters
    {
-      int32_t portListen = 3000;
-      int32_t maxPayloadLength_bytes = 256 * 1024;
-      int64_t tLastRequestTimeout_ms = 3000;
-      int32_t tIdleTimeout_s = 120;
+      int32_t port_listen = 3000;
+      int32_t max_payload = 256 * 1024;
+      int64_t t_last_request_timeout_ms = 3000;
+      int32_t t_idle_timeout_s = 120;
 
-      std::string httpRoot = ".";
-      std::vector<std::string> resources;
+      std::string http_root = ".";
+      std::vector<std::string> resources{};
 
-      std::string sslKey = "key.pem";
-      std::string sslCert = "cert.pem";
+      std::string ssl_key = "key.pem";
+      std::string ssl_cert = "cert.pem";
 
       // todo:
       // max clients
@@ -133,7 +133,7 @@ namespace incpp
          var("incppect.ip_address[%d]", [this](const std::vector<int>& idxs) {
             auto it = clientData.cbegin();
             std::advance(it, idxs[0]);
-            return view(it->second.ipAddress);
+            return view(it->second.ip_address);
          });
       }
       ~Incppect() {}
@@ -230,24 +230,24 @@ namespace incpp
          mainLoop = uWS::Loop::get();
 
          constexpr std::string_view protocol = SSL ? "HTTPS" : "HTTP";
-         print("[incppect] running instance. serving {} from '{}'\n", protocol, parameters.httpRoot);
+         print("[incppect] running instance. serving {} from '{}'\n", protocol, parameters.http_root);
 
          typename uWS::TemplatedApp<SSL>::template WebSocketBehavior<PerSocketData> wsBehaviour;
          wsBehaviour.compression = uWS::SHARED_COMPRESSOR;
-         wsBehaviour.maxPayloadLength = parameters.maxPayloadLength_bytes;
-         wsBehaviour.idleTimeout = parameters.tIdleTimeout_s;
+         wsBehaviour.maxPayloadLength = parameters.max_payload;
+         wsBehaviour.idleTimeout = parameters.t_idle_timeout_s;
          wsBehaviour.open = [&](auto* ws) {
             static int32_t uniqueId = 1;
             ++uniqueId;
 
             auto& cd = clientData[uniqueId];
-            cd.tConnected_ms = timestamp();
+            cd.t_connected_ms = timestamp();
 
             auto addressBytes = ws->getRemoteAddress();
-            cd.ipAddress[0] = addressBytes[12];
-            cd.ipAddress[1] = addressBytes[13];
-            cd.ipAddress[2] = addressBytes[14];
-            cd.ipAddress[3] = addressBytes[15];
+            cd.ip_address[0] = addressBytes[12];
+            cd.ip_address[1] = addressBytes[13];
+            cd.ip_address[2] = addressBytes[14];
+            cd.ip_address[3] = addressBytes[15];
 
             auto sd = (PerSocketData*)ws->getUserData();
             sd->clientId = uniqueId;
@@ -259,7 +259,7 @@ namespace incpp
             print("[incppect] client with id = {} connected\n", sd->clientId);
 
             if (handler) {
-               handler(sd->clientId, Connect, {(const char*)cd.ipAddress.data(), 4});
+               handler(sd->clientId, Connect, {(const char*)cd.ip_address.data(), 4});
             }
          };
          wsBehaviour.message = [this](auto* ws, std::string_view message, uWS::OpCode /*opCode*/) {
@@ -315,22 +315,22 @@ namespace incpp
                }
                print("[incppect] received requests: {}\n", nRequests);
 
-               cd.lastRequests.clear();
+               cd.last_requests.clear();
                for (int i = 0; i < nRequests; ++i) {
                   int32_t curRequest = -1;
                   std::memcpy((char*)(&curRequest), message.data() + 4 * (i + 1), sizeof(curRequest));
                   if (cd.requests.find(curRequest) != cd.requests.end()) {
-                     cd.lastRequests.push_back(curRequest);
+                     cd.last_requests.push_back(curRequest);
                      cd.requests[curRequest].tLastRequested_ms = timestamp();
-                     cd.requests[curRequest].tLastRequestTimeout_ms = parameters.tLastRequestTimeout_ms;
+                     cd.requests[curRequest].t_last_request_timeout_ms = parameters.t_last_request_timeout_ms;
                   }
                }
             } break;
             case 3: {
-               for (auto curRequest : cd.lastRequests) {
+               for (auto curRequest : cd.last_requests) {
                   if (cd.requests.find(curRequest) != cd.requests.end()) {
                      cd.requests[curRequest].tLastRequested_ms = timestamp();
-                     cd.requests[curRequest].tLastRequestTimeout_ms = parameters.tLastRequestTimeout_ms;
+                     cd.requests[curRequest].t_last_request_timeout_ms = parameters.t_last_request_timeout_ms;
                   }
                }
             } break;
@@ -377,8 +377,8 @@ namespace incpp
          if constexpr (SSL) {
             uWS::SocketContextOptions ssl_options = {};
 
-            ssl_options.key_file_name = parameters.sslKey.data();
-            ssl_options.cert_file_name = parameters.sslCert.data();
+            ssl_options.key_file_name = parameters.ssl_key.data();
+            ssl_options.cert_file_name = parameters.ssl_cert.data();
 
             app.reset(new uWS::TemplatedApp<SSL>(ssl_options));
          }
@@ -390,8 +390,8 @@ namespace incpp
             print("[incppect] failed to construct uWS server!\n");
             if (SSL) {
                print("[incppect] verify that you have valid certificate files:\n");
-               print("[incppect] key  file : '{}'\n", parameters.sslKey);
-               print("[incppect] cert file : '{}'\n", parameters.sslCert);
+               print("[incppect] key  file : '{}'\n", parameters.ssl_key);
+               print("[incppect] cert file : '{}'\n", parameters.ssl_cert);
             }
             return;
          }
@@ -418,8 +418,8 @@ namespace incpp
                   return;
                }
 
-               print("resource = '{}'\n", (parameters.httpRoot + url));
-               std::ifstream file(parameters.httpRoot + url);
+               print("resource = '{}'\n", (parameters.http_root + url));
+               std::ifstream file(parameters.http_root + url);
 
                if (file.is_open() == false || file.good() == false) {
                   res->end("Resource not found");
@@ -448,14 +448,14 @@ namespace incpp
             return;
          });
          (*app)
-            .listen(parameters.portListen,
+            .listen(parameters.port_listen,
                     [this](auto* token) {
                        this->listenSocket = token;
                        if (token) {
-                          print("[incppect] listening on port {}\n", parameters.portListen);
+                          print("[incppect] listening on port {}\n", parameters.port_listen);
 
                           const char* kProtocol = SSL ? "https" : "http";
-                          print("[incppect] {}://localhost:{}/\n", kProtocol, parameters.portListen);
+                          print("[incppect] {}://localhost:{}/\n", kProtocol, parameters.port_listen);
                        }
                     })
             .run();
@@ -484,10 +484,10 @@ namespace incpp
             for (auto& [requestId, req] : cd.requests) {
                auto& getter = getters[req.getterId];
                auto tCur = timestamp();
-               if (((req.tLastRequestTimeout_ms < 0 && req.tLastRequested_ms > 0) ||
-                    (tCur - req.tLastRequested_ms < req.tLastRequestTimeout_ms)) &&
+               if (((req.t_last_request_timeout_ms < 0 && req.tLastRequested_ms > 0) ||
+                    (tCur - req.tLastRequested_ms < req.t_last_request_timeout_ms)) &&
                    tCur - req.tLastUpdated_ms > req.tMinUpdate_ms) {
-                  if (req.tLastRequestTimeout_ms < 0) {
+                  if (req.t_last_request_timeout_ms < 0) {
                      req.tLastRequested_ms = 0;
                   }
 
@@ -611,9 +611,9 @@ namespace incpp
                   diff.append((char*)(&n), sizeof(uint32_t));
                   diff.append((char*)(&c), sizeof(uint32_t));
 
-                  if ((int32_t)diff.size() > parameters.maxPayloadLength_bytes) {
+                  if ((int32_t)diff.size() > parameters.max_payload) {
                      print("[incppect] warning: buffer size ({}) exceeds maxPayloadLength ({})\n", diff.size(),
-                           parameters.maxPayloadLength_bytes);
+                           parameters.max_payload);
                   }
 
                   // compress only for message larger than 64 bytes
@@ -625,9 +625,9 @@ namespace incpp
                   }
                }
                else {
-                  if ((int32_t)buf.size() > parameters.maxPayloadLength_bytes) {
+                  if ((int32_t)buf.size() > parameters.max_payload) {
                      print("[incppect] warning: buffer size ({}) exceeds maxPayloadLength ({})\n", (int)buf.size(),
-                           parameters.maxPayloadLength_bytes);
+                           parameters.max_payload);
                   }
 
                   // compress only for message larger than 64 bytes

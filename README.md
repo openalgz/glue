@@ -78,8 +78,8 @@ auto & incppect = Incppect<true>::getInstance();
 
 // provide valid SSL certificate
 incppect::Parameters parameters;
-parameters.sslKey = "key.pem";
-parameters.sslCert = "cert.pem";
+parameters.ssl_key = "key.pem";
+parameters.ssl_cert = "cert.pem";
 
 incppect.run_async(parameters);
 

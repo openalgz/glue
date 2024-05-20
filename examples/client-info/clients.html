@@ -35,8 +35,8 @@
 
                     output.innerHTML = 'nclients = ' + nclients + '<br>';
                     for (var i = 0; i < nclients; ++i) {
-                        var ipaddress_bytes = this.get_int32('incppect.ip_address[%d]', i);
-                        output.innerHTML += 'client ' + i + ' : ' + int_to_ip(ipaddress_bytes) + '<br>';
+                        var ip_address_bytes = this.get_int32('incppect.ip_address[%d]', i);
+                        output.innerHTML += 'client ' + i + ' : ' + int_to_ip(ip_address_bytes) + '<br>';
                     }
                     output.innerHTML += '<br>';
                     output.innerHTML += 'Server stats:<br>';
