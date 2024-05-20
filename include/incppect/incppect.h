@@ -106,6 +106,8 @@ namespace incpp
          }
       }
 
+      int32_t unique_id = 1;
+
       enum struct event : uint8_t {
          connect,
          disconnect,
@@ -232,10 +234,9 @@ namespace incpp
          wsBehaviour.maxPayloadLength = parameters.max_payload;
          wsBehaviour.idleTimeout = parameters.t_idle_timeout_s;
          wsBehaviour.open = [&](auto* ws) {
-            static int32_t uniqueId = 1;
-            ++uniqueId;
+            ++unique_id;
 
-            auto& cd = client_data[uniqueId];
+            auto& cd = client_data[unique_id];
             cd.t_connected_ms = timestamp();
 
             auto addressBytes = ws->getRemoteAddress();
@@ -245,11 +246,11 @@ namespace incpp
             cd.ip_address[3] = addressBytes[15];
 
             PerSocketData* sd = ws->getUserData();
-            sd->client_id = uniqueId;
+            sd->client_id = unique_id;
             sd->ws = ws;
             sd->main_loop = uWS::Loop::get();
 
-            socket_data.insert({uniqueId, sd});
+            socket_data.insert({unique_id, sd});
 
             print("[incppect] client with id = {} connected\n", sd->client_id);
 
