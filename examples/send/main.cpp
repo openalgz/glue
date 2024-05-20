@@ -17,17 +17,17 @@ int main(int argc, char** argv)
    auto parameters = configure_incppect_example(argc, argv, "send", port);
 
    // handle input from the clients
-   incppect::getInstance().handler = [&](int clientId, incppect::event etype, std::string_view data) {
+   incppect::getInstance().handler = [&](int client_id, incppect::event etype, std::string_view data) {
       using enum incppect::event;
       switch (etype) {
       case connect: {
-         printf("Client %d connected\n", clientId);
+         printf("Client %d connected\n", client_id);
       } break;
       case disconnect: {
-         printf("Client %d disconnected\n", clientId);
+         printf("Client %d disconnected\n", client_id);
       } break;
       case custom: {
-         printf("Client %d: '%s'\n", clientId, std::string(data.data(), data.size()).c_str());
+         printf("Client %d: '%s'\n", client_id, std::string(data.data(), data.size()).c_str());
       } break;
       };
    };

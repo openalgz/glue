@@ -114,11 +114,11 @@ namespace incpp
 
       using TResourceContent = std::string;
       using TGetter = std::function<std::string_view(const std::vector<int>& idxs)>;
-      using THandler = std::function<void(int clientId, event etype, std::string_view)>;
+      using THandler = std::function<void(int client_id, event etype, std::string_view)>;
 
       struct PerSocketData final
       {
-         int32_t clientId{};
+         int32_t client_id{};
          uWS::Loop* main_loop{};
          uWS::WebSocket<SSL, true, PerSocketData>* ws{};
       };
@@ -245,16 +245,16 @@ namespace incpp
             cd.ip_address[3] = addressBytes[15];
 
             PerSocketData* sd = ws->getUserData();
-            sd->clientId = uniqueId;
+            sd->client_id = uniqueId;
             sd->ws = ws;
             sd->main_loop = uWS::Loop::get();
 
             socket_data.insert({uniqueId, sd});
 
-            print("[incppect] client with id = {} connected\n", sd->clientId);
+            print("[incppect] client with id = {} connected\n", sd->client_id);
 
             if (handler) {
-               handler(sd->clientId, event::connect, {(const char*)cd.ip_address.data(), 4});
+               handler(sd->client_id, event::connect, {(const char*)cd.ip_address.data(), 4});
             }
          };
          wsBehaviour.message = [this](auto* ws, std::string_view message, uWS::OpCode /*opCode*/) {
@@ -269,7 +269,7 @@ namespace incpp
             bool doUpdate = true;
 
             PerSocketData* sd = ws->getUserData();
-            auto& cd = client_data[sd->clientId];
+            auto& cd = client_data[sd->client_id];
 
             switch (type) {
             case 1: {
@@ -287,7 +287,7 @@ namespace incpp
                   for (int i = 0; i < nidxs; ++i) {
                      int idx = 0;
                      ss >> idx;
-                     if (idx == -1) idx = sd->clientId;
+                     if (idx == -1) idx = sd->client_id;
                      request.idxs.push_back(idx);
                   }
 
@@ -332,7 +332,7 @@ namespace incpp
             case 4: {
                doUpdate = false;
                if (handler && message.size() > sizeof(int32_t)) {
-                  handler(sd->clientId, event::custom,
+                  handler(sd->client_id, event::custom,
                           {message.data() + sizeof(int32_t), message.size() - sizeof(int32_t)});
                }
             } break;
@@ -358,13 +358,13 @@ namespace incpp
          };
          wsBehaviour.close = [this](auto* ws, int /*code*/, std::string_view /*message*/) {
             PerSocketData* sd = ws->getUserData();
-            print("[incppect] client with id = {} disconnected\n", sd->clientId);
+            print("[incppect] client with id = {} disconnected\n", sd->client_id);
 
-            client_data.erase(sd->clientId);
-            socket_data.erase(sd->clientId);
+            client_data.erase(sd->client_id);
+            socket_data.erase(sd->client_id);
 
             if (handler) {
-               handler(sd->clientId, event::disconnect, {nullptr, 0});
+               handler(sd->client_id, event::disconnect, {nullptr, 0});
             }
          };
 
@@ -459,12 +459,12 @@ namespace incpp
 
       void update()
       {
-         for (auto& [clientId, cd] : client_data) {
-            if (socket_data[clientId]->ws->getBufferedAmount()) {
+         for (auto& [client_id, cd] : client_data) {
+            if (socket_data[client_id]->ws->getBufferedAmount()) {
                print(
                   "[incppect] warning: buffered amount = {}, not sending updates to client {}. waiting for buffer to "
                   "drain\n",
-                  socket_data[clientId]->ws->getBufferedAmount(), clientId);
+                  socket_data[client_id]->ws->getBufferedAmount(), client_id);
                continue;
             }
 
@@ -615,9 +615,9 @@ namespace incpp
                   // compress only for message larger than 64 bytes
                   bool doCompress = diff.size() > 64;
 
-                  if (socket_data[clientId]->ws->send({diff.data(), diff.size()}, uWS::OpCode::BINARY, doCompress) ==
+                  if (socket_data[client_id]->ws->send({diff.data(), diff.size()}, uWS::OpCode::BINARY, doCompress) ==
                       false) {
-                     print("[incpeect] warning: backpressure for client {} increased \n", clientId);
+                     print("[incpeect] warning: backpressure for client {} increased \n", client_id);
                   }
                }
                else {
@@ -628,9 +628,9 @@ namespace incpp
 
                   // compress only for message larger than 64 bytes
                   const bool doCompress = buf.size() > 64;
-                  if (socket_data[clientId]->ws->send({buf.data(), buf.size()}, uWS::OpCode::BINARY, doCompress) ==
+                  if (socket_data[client_id]->ws->send({buf.data(), buf.size()}, uWS::OpCode::BINARY, doCompress) ==
                       false) {
-                     print("[incpeect] warning: backpressure for client {} increased \n", clientId);
+                     print("[incpeect] warning: backpressure for client {} increased \n", client_id);
                   }
                }
 
