@@ -391,7 +391,6 @@ namespace incpp
                print("[incppect] key  file : '{}'\n", parameters.sslKey);
                print("[incppect] cert file : '{}'\n", parameters.sslCert);
             }
-
             return;
          }
 
@@ -425,7 +424,7 @@ namespace incpp
                   return;
                }
 
-               const std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+               const std::string str{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
 
                if (str.empty()) {
                   res->end("Resource not found");
@@ -440,7 +439,7 @@ namespace incpp
             });
          }
          (*app).get("/*", [this](auto* res, auto* req) {
-            const std::string url = std::string(req->getUrl());
+            const std::string url{req->getUrl()};
             print("url = '{}'\n", url);
 
             res->end("Resource not found");
@@ -611,28 +610,28 @@ namespace incpp
                   diff.append((char*)(&c), sizeof(uint32_t));
 
                   if ((int32_t)diff.size() > parameters.maxPayloadLength_bytes) {
-                     print("[incppect] warning: buffer size ({}) exceeds maxPayloadLength ({})\n",
-                               diff.size(), parameters.maxPayloadLength_bytes);
+                     print("[incppect] warning: buffer size ({}) exceeds maxPayloadLength ({})\n", diff.size(),
+                           parameters.maxPayloadLength_bytes);
                   }
 
                   // compress only for message larger than 64 bytes
                   bool doCompress = diff.size() > 64;
 
-                  if (socketData[clientId]->ws->send({diff.data(), diff.size()}, uWS::OpCode::BINARY,
-                                                     doCompress) == false) {
+                  if (socketData[clientId]->ws->send({diff.data(), diff.size()}, uWS::OpCode::BINARY, doCompress) ==
+                      false) {
                      print("[incpeect] warning: backpressure for client {} increased \n", clientId);
                   }
                }
                else {
                   if ((int32_t)buf.size() > parameters.maxPayloadLength_bytes) {
-                     print("[incppect] warning: buffer size ({}) exceeds maxPayloadLength ({})\n",
-                               (int)buf.size(), parameters.maxPayloadLength_bytes);
+                     print("[incppect] warning: buffer size ({}) exceeds maxPayloadLength ({})\n", (int)buf.size(),
+                           parameters.maxPayloadLength_bytes);
                   }
 
                   // compress only for message larger than 64 bytes
                   const bool doCompress = buf.size() > 64;
-                  if (socketData[clientId]->ws->send({buf.data(), buf.size()}, uWS::OpCode::BINARY,
-                                                     doCompress) == false) {
+                  if (socketData[clientId]->ws->send({buf.data(), buf.size()}, uWS::OpCode::BINARY, doCompress) ==
+                      false) {
                      print("[incpeect] warning: backpressure for client {} increased \n", clientId);
                   }
                }
