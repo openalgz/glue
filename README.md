@@ -33,7 +33,7 @@ In your C++ program add something along these lines:
 
 // start the web server in a dedicated thread
 auto & incppect = Incppect<false>::getInstance();
-incppect.runAsync(...);
+incppect.run_async(...);
 
 int32_t some_var;
 float some_arr[10];
@@ -81,7 +81,7 @@ incppect::Parameters parameters;
 parameters.sslKey = "key.pem";
 parameters.sslCert = "cert.pem";
 
-incppect.runAsync(parameters);
+incppect.run_async(parameters);
 
 int32_t some_var;
 float some_arr[10];

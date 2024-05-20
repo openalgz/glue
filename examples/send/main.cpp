@@ -31,7 +31,7 @@ int main(int argc, char** argv)
       };
    };
 
-   incppect::getInstance().runAsync(parameters).detach();
+   auto future = incppect::getInstance().run_async(parameters);
 
    while (true) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));

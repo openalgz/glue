@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <fstream>
 #include <functional>
+#include <future>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -166,12 +167,13 @@ namespace incpp
       // number of connected clients
       int32_t nConnected() const { return socketData.size(); }
 
-      // run the incppect service main loop in dedicated thread
-      // non-blocking call, returns the created std::thread
-      std::thread runAsync(Parameters parameters)
+      // run the main loop in dedicated thread
+      // non-blocking call, returns the created std::future<void>
+      template <class Params>
+         requires std::same_as<std::decay_t<Params>, Parameters>
+      std::future<void> run_async(Params&& params)
       {
-         std::thread worker([this, parameters]() { this->run(parameters); });
-         return worker;
+         return std::async([this, p = std::forward<Params>(params)]() { run(p); });
       }
 
       // define variable/memory to inspect

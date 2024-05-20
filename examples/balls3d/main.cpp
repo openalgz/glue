@@ -188,7 +188,7 @@ int main(int argc, char** argv)
 
    auto parameters = configure_incppect_example(argc, argv, "balls3d", port);
 
-   incppect::getInstance().runAsync(parameters).detach();
+   auto future = incppect::getInstance().run_async(parameters);
 
    float checkpoint = 0.0f;
    while (true) {

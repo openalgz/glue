@@ -23,7 +23,7 @@ int main(int argc, char** argv)
    parameters.sslKey = "key.pem";
    parameters.sslCert = "cert.pem";
 
-   incppect::getInstance().runAsync(parameters).detach();
+   auto future = incppect::getInstance().run_async(parameters);
 
    int8_t var_int8 = 1;
    int16_t var_int16 = 2;
