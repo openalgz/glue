@@ -291,7 +291,7 @@ namespace incpp
                      request.idxs.push_back(idx);
                   }
 
-                  if (pathToGetter.find(path) != pathToGetter.end()) {
+                  if (pathToGetter.contains(path)) {
                      print("[incppect] req_id = {}, path = '{}', nidxs = {}\n", req_id, path, nidxs);
                      request.getter_id = pathToGetter[path];
 
@@ -315,7 +315,7 @@ namespace incpp
                for (int i = 0; i < nRequests; ++i) {
                   int32_t curRequest = -1;
                   std::memcpy((char*)(&curRequest), message.data() + 4 * (i + 1), sizeof(curRequest));
-                  if (cd.requests.find(curRequest) != cd.requests.end()) {
+                  if (cd.requests.contains(curRequest)) {
                      cd.last_requests.push_back(curRequest);
                      cd.requests[curRequest].t_last_req_ms = timestamp();
                      cd.requests[curRequest].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
@@ -325,7 +325,7 @@ namespace incpp
             }
             case 3: {
                for (auto curRequest : cd.last_requests) {
-                  if (cd.requests.find(curRequest) != cd.requests.end()) {
+                  if (cd.requests.contains(curRequest)) {
                      cd.requests[curRequest].t_last_req_ms = timestamp();
                      cd.requests[curRequest].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
                   }
@@ -351,6 +351,7 @@ namespace incpp
          wsBehaviour.drain = [this](auto* ws) {
             /* Check getBufferedAmount here */
             if (ws->getBufferedAmount() > 0) {
+               // use this-> to hide wrong warnings from Clang
                this->print("[incppect] drain: buffered amount = {}\n", ws->getBufferedAmount());
             }
          };
@@ -409,7 +410,7 @@ namespace incpp
                   url += "index.html";
                }
 
-               if (resources.find(url) != resources.end()) {
+               if (resources.contains(url)) {
                   res->end(resources[url]);
                   return;
                }
