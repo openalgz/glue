@@ -280,8 +280,8 @@ namespace incpp
                   std::string path;
                   ss >> path;
                   if (ss.eof()) break;
-                  int requestId = 0;
-                  ss >> requestId;
+                  int req_id = 0;
+                  ss >> req_id;
                   int nidxs = 0;
                   ss >> nidxs;
                   for (int i = 0; i < nidxs; ++i) {
@@ -292,10 +292,10 @@ namespace incpp
                   }
 
                   if (pathToGetter.find(path) != pathToGetter.end()) {
-                     print("[incppect] requestId = {}, path = '{}', nidxs = {}\n", requestId, path, nidxs);
+                     print("[incppect] req_id = {}, path = '{}', nidxs = {}\n", req_id, path, nidxs);
                      request.getter_id = pathToGetter[path];
 
-                     cd.requests[requestId] = std::move(request);
+                     cd.requests[req_id] = std::move(request);
                   }
                   else {
                      print("[incppect] missing path '{}'\n", path);
@@ -368,7 +368,7 @@ namespace incpp
             }
          };
 
-         std::unique_ptr<uWS::TemplatedApp<SSL>> app;
+         std::unique_ptr<uWS::TemplatedApp<SSL>> app{};
 
          if constexpr (SSL) {
             uWS::SocketContextOptions ssl_options = {};
@@ -475,7 +475,7 @@ namespace incpp
             uint32_t typeAll = 0;
             buf.append((char*)(&typeAll), sizeof(typeAll));
 
-            for (auto& [requestId, req] : cd.requests) {
+            for (auto& [req_id, req] : cd.requests) {
                auto& getter = getters[req.getter_id];
                const auto t = timestamp();
                if (((req.t_last_req_timeout_ms < 0 && req.t_last_req_ms > 0) ||
@@ -490,12 +490,12 @@ namespace incpp
 
                   constexpr int kPadding = 4;
 
-                  int dataSize_bytes = req.cur.size();
+                  int data_size = req.cur.size();
                   int padding_bytes = 0;
                   {
-                     int r = dataSize_bytes % kPadding;
+                     int r = data_size % kPadding;
                      while (r > 0 && r < kPadding) {
-                        ++dataSize_bytes;
+                        ++data_size;
                         ++padding_bytes;
                         ++r;
                      }
@@ -506,11 +506,11 @@ namespace incpp
                      type = 1; // run-length encoding of diff
                   }
 
-                  buf.append((char*)(&requestId), sizeof(requestId));
+                  buf.append((char*)(&req_id), sizeof(req_id));
                   buf.append((char*)(&type), sizeof(type));
 
                   if (type == 0) {
-                     buf.append((char*)(&dataSize_bytes), sizeof(dataSize_bytes));
+                     buf.append((char*)(&data_size), sizeof(data_size));
                      buf.append(req.cur);
                      {
                         char v = 0;
@@ -565,8 +565,8 @@ namespace incpp
                      req.diff.append((char*)(&n), sizeof(uint32_t));
                      req.diff.append((char*)(&c), sizeof(uint32_t));
 
-                     dataSize_bytes = req.diff.size();
-                     buf.append((char*)(&dataSize_bytes), sizeof(dataSize_bytes));
+                     data_size = req.diff.size();
+                     buf.append((char*)(&data_size), sizeof(data_size));
                      buf.append(req.diff);
                   }
 
