@@ -114,9 +114,8 @@ namespace incpp
          custom,
       };
 
-      using TResourceContent = std::string;
       using TGetter = std::function<std::string_view(const std::vector<int>& idxs)>;
-      using THandler = std::function<void(int client_id, event etype, std::string_view)>;
+      using THandler = std::function<void(int32_t client_id, event etype, std::string_view)>;
 
       struct PerSocketData final
       {
@@ -138,7 +137,7 @@ namespace incpp
       std::map<int32_t, PerSocketData*> socket_data{};
       std::map<int32_t, ClientData> client_data{};
 
-      std::map<std::string, TResourceContent> resources{};
+      std::map<std::string, std::string> resources{};
 
       THandler handler{};
 
@@ -178,10 +177,10 @@ namespace incpp
       }
 
       // set a resource. useful for serving html/js files from within the application
-      void setResource(const std::string& url, const TResourceContent& content) { resources[url] = content; }
+      void set_resource(const std::string& url, const std::string& content) { resources[url] = content; }
 
       // number of connected clients
-      int32_t nConnected() const { return socket_data.size(); }
+      int32_t n_connected() const { return socket_data.size(); }
 
       // run the main loop in dedicated thread
       // non-blocking call, returns the created std::future<void>
@@ -250,7 +249,7 @@ namespace incpp
             sd->ws = ws;
             sd->main_loop = uWS::Loop::get();
 
-            socket_data.insert({unique_id, sd});
+            socket_data.emplace(unique_id, sd);
 
             print("[incppect] client with id = {} connected\n", sd->client_id);
 
@@ -264,8 +263,8 @@ namespace incpp
                return;
             }
 
-            int32_t type = -1;
-            std::memcpy((char*)(&type), message.data(), sizeof(type));
+            int32_t type;
+            std::memcpy(&type, message.data(), sizeof(type));
 
             bool doUpdate = true;
 
