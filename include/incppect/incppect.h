@@ -100,25 +100,25 @@ namespace incpp
 
       struct PerSocketData final
       {
-         int32_t clientId = 0;
-         uWS::Loop* mainLoop = nullptr;
-         uWS::WebSocket<SSL, true, PerSocketData>* ws = nullptr;
+         int32_t clientId{};
+         uWS::Loop* mainLoop{};
+         uWS::WebSocket<SSL, true, PerSocketData>* ws{};
       };
 
       Parameters parameters;
 
-      double txTotal_bytes = 0.0;
-      double rxTotal_bytes = 0.0;
+      double txTotal_bytes{};
+      double rxTotal_bytes{};
 
-      std::map<std::string, int> pathToGetter;
-      std::vector<TGetter> getters;
+      std::map<std::string, int> pathToGetter{};
+      std::vector<TGetter> getters{};
 
-      uWS::Loop* mainLoop = nullptr;
-      us_listen_socket_t* listenSocket = nullptr;
-      std::map<int32_t, PerSocketData*> socketData;
-      std::map<int32_t, ClientData> clientData;
+      uWS::Loop* mainLoop{};
+      us_listen_socket_t* listenSocket{};
+      std::map<int32_t, PerSocketData*> socketData{};
+      std::map<int32_t, ClientData> clientData{};
 
-      std::map<std::string, TResourceContent> resources;
+      std::map<std::string, TResourceContent> resources{};
 
       THandler handler{};
 
