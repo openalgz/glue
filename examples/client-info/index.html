@@ -1,49 +1,51 @@
 <html>
-    <head>
-        <script src="incppect.js"></script>
-    </head>
 
-    <body>
-        <h3>Incppect example: client-info</h3>
-        <b>index.html</b><br><br>
+<head>
+    <script src="incppect.js"></script>
+</head>
 
-        <script>
-            function init() {
-                // create output element
-                var output = document.createElement('div');
-                document.body.appendChild( output );
+<body>
+    <h3>Incppect example: client-info</h3>
+    <b>index.html</b><br><br>
 
-                // define incppect client functions
-                incppect.render = function() {
-                    // print some C++ variables
-                    output.innerHTML = '';
-                    output.innerHTML += 'var_int8 = ' + this.get_int8('var_int8') + '<br>';
-                    output.innerHTML += 'var_int16 = ' + this.get_int16('var_int16') + '<br>';
-                    output.innerHTML += 'var_int32 = ' + this.get_int32('var_int32') + '<br>';
-                    output.innerHTML += 'var_int32_arr = ' + this.get_int32_arr('var_int32_arr') + '<br>';
-                    output.innerHTML += 'var_int32_arr[2] = ' + this.get_int32_arr('var_int32_arr[%d]', 2) + '<br>';
-                    output.innerHTML += 'var_float = ' + this.get_float('var_float') + '<br>';
-                    output.innerHTML += 'var_str = ' + this.get_str('var_str') + '<br>';
-                }
+    <script>
+        function init() {
+            // create output element
+            var output = document.createElement('div');
+            document.body.appendChild(output);
 
-                incppect.onerror = function(evt) {
-                    if (typeof evt === 'object') {
-                        output.innerHTML = 'Error: check console for more information';
-                        console.error(evt);
-                    } else {
-                        output.innerHTML = evt;
-                    }
-                }
-
-                // initialize incppect client
-                incppect.init();
+            // define incppect client functions
+            incppect.render = function () {
+                // print some C++ variables
+                output.innerHTML = '';
+                output.innerHTML += 'var_int8 = ' + this.get_int8('var_int8') + '<br>';
+                output.innerHTML += 'var_int16 = ' + this.get_int16('var_int16') + '<br>';
+                output.innerHTML += 'var_int32 = ' + this.get_int32('var_int32') + '<br>';
+                output.innerHTML += 'var_int32_arr = ' + this.get_int32_arr('var_int32_arr') + '<br>';
+                output.innerHTML += 'var_int32_arr[2] = ' + this.get_int32_arr('var_int32_arr[%d]', 2) + '<br>';
+                output.innerHTML += 'var_float = ' + this.get_float('var_float') + '<br>';
+                output.innerHTML += 'var_str = ' + this.get_str('var_str') + '<br>';
             }
 
-            init();
-        </script>
+            incppect.onerror = function (evt) {
+                if (typeof evt === 'object') {
+                    output.innerHTML = 'Error: check console for more information';
+                    console.error(evt);
+                } else {
+                    output.innerHTML = evt;
+                }
+            }
 
-        <br>
+            // initialize incppect client
+            incppect.init();
+        }
 
-        <a href="clients.html">Show client info</a>
-    </body>
+        init();
+    </script>
+
+    <br>
+
+    <a href="clients.html">Show client info</a>
+</body>
+
 </html>
