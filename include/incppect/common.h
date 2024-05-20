@@ -112,7 +112,7 @@ var incppect = {
 
     get: function (path, ...args) {
         for (var i = 1; i < arguments.length; i++) {
-            path = path.replace('%d', arguments[i]);
+            path = path.replace('{}', arguments[i]);
         }
 
         if (!(path in this.vars_map)) {
@@ -239,7 +239,16 @@ var incppect = {
         for (var key in this.var_to_id) {
             var nidxs = 0;
             var idxs = delim;
-            var keyp = key.replace(/\[-?\d*\]/g, function (m) { ++nidxs; idxs += m.replace(/[\[\]]/g, '') + delim; return '[%d]'; });
+            //var keyp = key.replace(/\[-?\d*\]/g, function (m) { ++nidxs; idxs += m.replace(/[\[\]]/g, '') + delim; return '[%d]'; });
+
+            // replace /# with /{}
+            var keyp = key.replace(/\/-?\d+/g, function (m) {
+                ++nidxs;
+                idxs += m.replace(/\//g, '') + delim; // Remove the leading '/' and append to idxs
+                return '/{}';
+            });
+            console.log(idxs);
+
             msg += keyp + delim + this.var_to_id[key].toString() + delim + nidxs + idxs;
         }
         var data = new Int8Array(4 + msg.length + 1);
