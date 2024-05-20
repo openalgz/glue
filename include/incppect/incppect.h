@@ -140,8 +140,6 @@ namespace incpp
 
       THandler handler{};
 
-      // service parameters
-
       Incppect()
       {
          var("incppect.nclients", [this](const std::vector<int>&) { return view(socket_data.size()); });
@@ -153,7 +151,6 @@ namespace incpp
             return view(it->second.ip_address);
          });
       }
-      ~Incppect() {}
 
       // run the incppect service main loop in the current thread
       // blocking call
@@ -205,7 +202,6 @@ namespace incpp
       {
          pathToGetter[path] = getters.size();
          getters.emplace_back(std::move(getter));
-
          return true;
       }
 
