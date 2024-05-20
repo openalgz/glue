@@ -22,9 +22,8 @@ namespace incpp
 {
    inline int64_t timestamp()
    {
-      return std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now().time_since_epoch())
-         .count();
+      using namespace std::chrono;
+      return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
    }
 
    struct Request
@@ -89,15 +88,15 @@ namespace incpp
          }
       }
 
-      enum EventType {
-         Connect,
-         Disconnect,
-         Custom,
+      enum struct event : uint8_t {
+         connect,
+         disconnect,
+         custom,
       };
 
       using TResourceContent = std::string;
       using TGetter = std::function<std::string_view(const std::vector<int>& idxs)>;
-      using THandler = std::function<void(int clientId, EventType etype, std::string_view)>;
+      using THandler = std::function<void(int clientId, event etype, std::string_view)>;
 
       struct PerSocketData final
       {
@@ -249,7 +248,7 @@ namespace incpp
             cd.ip_address[2] = addressBytes[14];
             cd.ip_address[3] = addressBytes[15];
 
-            auto sd = (PerSocketData*)ws->getUserData();
+            PerSocketData* sd = ws->getUserData();
             sd->clientId = uniqueId;
             sd->ws = ws;
             sd->mainLoop = uWS::Loop::get();
@@ -259,7 +258,7 @@ namespace incpp
             print("[incppect] client with id = {} connected\n", sd->clientId);
 
             if (handler) {
-               handler(sd->clientId, Connect, {(const char*)cd.ip_address.data(), 4});
+               handler(sd->clientId, event::connect, {(const char*)cd.ip_address.data(), 4});
             }
          };
          wsBehaviour.message = [this](auto* ws, std::string_view message, uWS::OpCode /*opCode*/) {
@@ -273,7 +272,7 @@ namespace incpp
 
             bool doUpdate = true;
 
-            auto sd = (PerSocketData*)ws->getUserData();
+            PerSocketData* sd = ws->getUserData();
             auto& cd = clientData[sd->clientId];
 
             switch (type) {
@@ -337,7 +336,7 @@ namespace incpp
             case 4: {
                doUpdate = false;
                if (handler && message.size() > sizeof(int32_t)) {
-                  handler(sd->clientId, Custom, {message.data() + sizeof(int32_t), message.size() - sizeof(int32_t)});
+                  handler(sd->clientId, event::custom, {message.data() + sizeof(int32_t), message.size() - sizeof(int32_t)});
                }
             } break;
             default:
@@ -361,14 +360,14 @@ namespace incpp
 
          };
          wsBehaviour.close = [this](auto* ws, int /*code*/, std::string_view /*message*/) {
-            auto sd = (PerSocketData*)ws->getUserData();
+            PerSocketData* sd = ws->getUserData();
             print("[incppect] client with id = {} disconnected\n", sd->clientId);
 
             clientData.erase(sd->clientId);
             socketData.erase(sd->clientId);
 
             if (handler) {
-               handler(sd->clientId, Disconnect, {nullptr, 0});
+               handler(sd->clientId, event::disconnect, {nullptr, 0});
             }
          };
 
