@@ -351,7 +351,7 @@ namespace incpp
          wsBehaviour.drain = [this](auto* ws) {
             /* Check getBufferedAmount here */
             if (ws->getBufferedAmount() > 0) {
-               print("[incppect] drain: buffered amount = {}\n", ws->getBufferedAmount());
+               this->print("[incppect] drain: buffered amount = {}\n", ws->getBufferedAmount());
             }
          };
          wsBehaviour.ping = [](auto* /*ws*/, std::string_view) {
