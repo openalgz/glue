@@ -28,17 +28,17 @@ namespace incpp
 
    struct Request
    {
-      int64_t tLastUpdated_ms = -1;
-      int64_t tLastRequested_ms = -1;
-      int64_t tMinUpdate_ms = 16;
-      int64_t t_last_request_timeout_ms = 3000;
+      int64_t t_last_update_ms = -1;
+      int64_t t_last_req_ms = -1;
+      int64_t t_min_update_ms = 16;
+      int64_t t_last_req_timeout_ms = 3000;
 
       std::vector<int> idxs{};
-      int32_t getterId = -1;
+      int32_t getter_id = -1;
 
-      std::string prevData{};
-      std::string diffData{};
-      std::string_view curData{};
+      std::string prev{};
+      std::string diff{};
+      std::string_view cur{};
    };
 
    struct ClientData
@@ -59,7 +59,7 @@ namespace incpp
    {
       int32_t port_listen = 3000;
       int32_t max_payload = 256 * 1024;
-      int64_t t_last_request_timeout_ms = 3000;
+      int64_t t_last_req_timeout_ms = 3000;
       int32_t t_idle_timeout_s = 120;
 
       std::string http_root = ".";
@@ -293,7 +293,7 @@ namespace incpp
 
                   if (pathToGetter.find(path) != pathToGetter.end()) {
                      print("[incppect] requestId = {}, path = '{}', nidxs = {}\n", requestId, path, nidxs);
-                     request.getterId = pathToGetter[path];
+                     request.getter_id = pathToGetter[path];
 
                      cd.requests[requestId] = std::move(request);
                   }
@@ -316,16 +316,16 @@ namespace incpp
                   std::memcpy((char*)(&curRequest), message.data() + 4 * (i + 1), sizeof(curRequest));
                   if (cd.requests.find(curRequest) != cd.requests.end()) {
                      cd.last_requests.push_back(curRequest);
-                     cd.requests[curRequest].tLastRequested_ms = timestamp();
-                     cd.requests[curRequest].t_last_request_timeout_ms = parameters.t_last_request_timeout_ms;
+                     cd.requests[curRequest].t_last_req_ms = timestamp();
+                     cd.requests[curRequest].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
                   }
                }
             } break;
             case 3: {
                for (auto curRequest : cd.last_requests) {
                   if (cd.requests.find(curRequest) != cd.requests.end()) {
-                     cd.requests[curRequest].tLastRequested_ms = timestamp();
-                     cd.requests[curRequest].t_last_request_timeout_ms = parameters.t_last_request_timeout_ms;
+                     cd.requests[curRequest].t_last_req_ms = timestamp();
+                     cd.requests[curRequest].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
                   }
                }
             } break;
@@ -478,21 +478,21 @@ namespace incpp
             buf.append((char*)(&typeAll), sizeof(typeAll));
 
             for (auto& [requestId, req] : cd.requests) {
-               auto& getter = getters[req.getterId];
+               auto& getter = getters[req.getter_id];
                auto tCur = timestamp();
-               if (((req.t_last_request_timeout_ms < 0 && req.tLastRequested_ms > 0) ||
-                    (tCur - req.tLastRequested_ms < req.t_last_request_timeout_ms)) &&
-                   tCur - req.tLastUpdated_ms > req.tMinUpdate_ms) {
-                  if (req.t_last_request_timeout_ms < 0) {
-                     req.tLastRequested_ms = 0;
+               if (((req.t_last_req_timeout_ms < 0 && req.t_last_req_ms > 0) ||
+                    (tCur - req.t_last_req_ms < req.t_last_req_timeout_ms)) &&
+                   tCur - req.t_last_update_ms > req.t_min_update_ms) {
+                  if (req.t_last_req_timeout_ms < 0) {
+                     req.t_last_req_ms = 0;
                   }
 
-                  req.curData = getter(req.idxs);
-                  req.tLastUpdated_ms = tCur;
+                  req.cur = getter(req.idxs);
+                  req.t_last_update_ms = tCur;
 
                   const int kPadding = 4;
 
-                  int dataSize_bytes = req.curData.size();
+                  int dataSize_bytes = req.cur.size();
                   int padding_bytes = 0;
                   {
                      int r = dataSize_bytes % kPadding;
@@ -504,7 +504,7 @@ namespace incpp
                   }
 
                   int32_t type = 0; // full update
-                  if (req.prevData.size() == req.curData.size() + padding_bytes && req.curData.size() > 256) {
+                  if (req.prev.size() == req.cur.size() + padding_bytes && req.cur.size() > 256) {
                      type = 1; // run-length encoding of diff
                   }
 
@@ -513,7 +513,7 @@ namespace incpp
 
                   if (type == 0) {
                      buf.append((char*)(&dataSize_bytes), sizeof(dataSize_bytes));
-                     buf.append(req.curData);
+                     buf.append(req.cur);
                      {
                         char v = 0;
                         for (int i = 0; i < padding_bytes; ++i) {
@@ -526,53 +526,53 @@ namespace incpp
                      uint32_t b = 0;
                      uint32_t c = 0;
                      uint32_t n = 0;
-                     req.diffData.clear();
+                     req.diff.clear();
 
-                     for (int i = 0; i < (int)req.curData.size(); i += 4) {
-                        std::memcpy(&a, req.prevData.data() + i, sizeof(uint32_t));
-                        std::memcpy(&b, req.curData.data() + i, sizeof(uint32_t));
+                     for (int i = 0; i < (int)req.cur.size(); i += 4) {
+                        std::memcpy(&a, req.prev.data() + i, sizeof(uint32_t));
+                        std::memcpy(&b, req.cur.data() + i, sizeof(uint32_t));
                         a = a ^ b;
                         if (a == c) {
                            ++n;
                         }
                         else {
                            if (n > 0) {
-                              req.diffData.append((char*)(&n), sizeof(uint32_t));
-                              req.diffData.append((char*)(&c), sizeof(uint32_t));
+                              req.diff.append((char*)(&n), sizeof(uint32_t));
+                              req.diff.append((char*)(&c), sizeof(uint32_t));
                            }
                            n = 1;
                            c = a;
                         }
                      }
 
-                     if (req.curData.size() % 4 != 0) {
+                     if (req.cur.size() % 4 != 0) {
                         a = 0;
                         b = 0;
-                        uint32_t i = (req.curData.size() / 4) * 4;
-                        uint32_t k = req.curData.size() - i;
-                        std::memcpy(&a, req.prevData.data() + i, k);
-                        std::memcpy(&b, req.curData.data() + i, k);
+                        uint32_t i = (req.cur.size() / 4) * 4;
+                        uint32_t k = req.cur.size() - i;
+                        std::memcpy(&a, req.prev.data() + i, k);
+                        std::memcpy(&b, req.cur.data() + i, k);
                         a = a ^ b;
                         if (a == c) {
                            ++n;
                         }
                         else {
-                           req.diffData.append((char*)(&n), sizeof(uint32_t));
-                           req.diffData.append((char*)(&c), sizeof(uint32_t));
+                           req.diff.append((char*)(&n), sizeof(uint32_t));
+                           req.diff.append((char*)(&c), sizeof(uint32_t));
                            n = 1;
                            c = a;
                         }
                      }
 
-                     req.diffData.append((char*)(&n), sizeof(uint32_t));
-                     req.diffData.append((char*)(&c), sizeof(uint32_t));
+                     req.diff.append((char*)(&n), sizeof(uint32_t));
+                     req.diff.append((char*)(&c), sizeof(uint32_t));
 
-                     dataSize_bytes = req.diffData.size();
+                     dataSize_bytes = req.diff.size();
                      buf.append((char*)(&dataSize_bytes), sizeof(dataSize_bytes));
-                     buf.append(req.diffData);
+                     buf.append(req.diff);
                   }
 
-                  req.prevData = req.curData;
+                  req.prev = req.cur;
                }
             }
 
