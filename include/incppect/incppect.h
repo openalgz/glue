@@ -301,7 +301,8 @@ namespace incpp
                      print("[incppect] missing path '{}'\n", path);
                   }
                }
-            } break;
+               break;
+            }
             case 2: {
                int nRequests = (message.size() - sizeof(int32_t)) / sizeof(int32_t);
                if (nRequests * sizeof(int32_t) + sizeof(int32_t) != message.size()) {
@@ -320,7 +321,8 @@ namespace incpp
                      cd.requests[curRequest].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
                   }
                }
-            } break;
+               break;
+            }
             case 3: {
                for (auto curRequest : cd.last_requests) {
                   if (cd.requests.find(curRequest) != cd.requests.end()) {
@@ -328,14 +330,16 @@ namespace incpp
                      cd.requests[curRequest].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
                   }
                }
-            } break;
+               break;
+            }
             case 4: {
                doUpdate = false;
                if (handler && message.size() > sizeof(int32_t)) {
                   handler(sd->client_id, event::custom,
                           {message.data() + sizeof(int32_t), message.size() - sizeof(int32_t)});
                }
-            } break;
+               break;
+            }
             default:
                print("[incppect] unknown message type: {}\n", type);
             };
@@ -350,12 +354,8 @@ namespace incpp
                this->print("[incppect] drain: buffered amount = {}\n", ws->getBufferedAmount());
             }
          };
-         wsBehaviour.ping = [](auto* /*ws*/, std::string_view) {
-
-         };
-         wsBehaviour.pong = [](auto* /*ws*/, std::string_view) {
-
-         };
+         wsBehaviour.ping = [](auto* /*ws*/, std::string_view) {};
+         wsBehaviour.pong = [](auto* /*ws*/, std::string_view) {};
          wsBehaviour.close = [this](auto* ws, int /*code*/, std::string_view /*message*/) {
             PerSocketData* sd = ws->getUserData();
             print("[incppect] client with id = {} disconnected\n", sd->client_id);
@@ -439,7 +439,6 @@ namespace incpp
          (*app).get("/*", [this](auto* res, auto* req) {
             const std::string url{req->getUrl()};
             print("url = '{}'\n", url);
-
             res->end("Resource not found");
             return;
          });
@@ -449,7 +448,6 @@ namespace incpp
                        this->listen_socket = token;
                        if (token) {
                           print("[incppect] listening on port {}\n", parameters.port_listen);
-
                           const char* kProtocol = SSL ? "https" : "http";
                           print("[incppect] {}://localhost:{}/\n", kProtocol, parameters.port_listen);
                        }
@@ -479,18 +477,18 @@ namespace incpp
 
             for (auto& [requestId, req] : cd.requests) {
                auto& getter = getters[req.getter_id];
-               auto tCur = timestamp();
+               const auto t = timestamp();
                if (((req.t_last_req_timeout_ms < 0 && req.t_last_req_ms > 0) ||
-                    (tCur - req.t_last_req_ms < req.t_last_req_timeout_ms)) &&
-                   tCur - req.t_last_update_ms > req.t_min_update_ms) {
+                    (t - req.t_last_req_ms < req.t_last_req_timeout_ms)) &&
+                   t - req.t_last_update_ms > req.t_min_update_ms) {
                   if (req.t_last_req_timeout_ms < 0) {
                      req.t_last_req_ms = 0;
                   }
 
                   req.cur = getter(req.idxs);
-                  req.t_last_update_ms = tCur;
+                  req.t_last_update_ms = t;
 
-                  const int kPadding = 4;
+                  constexpr int kPadding = 4;
 
                   int dataSize_bytes = req.cur.size();
                   int padding_bytes = 0;

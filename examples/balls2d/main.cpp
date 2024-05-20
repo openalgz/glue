@@ -141,7 +141,7 @@ struct State
          }
       }
 
-      this->t += dt;
+      t += dt;
    }
 
    float t = 0.000f;
