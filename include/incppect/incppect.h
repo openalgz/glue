@@ -119,22 +119,22 @@ namespace incpp
       struct PerSocketData final
       {
          int32_t clientId{};
-         uWS::Loop* mainLoop{};
+         uWS::Loop* main_loop{};
          uWS::WebSocket<SSL, true, PerSocketData>* ws{};
       };
 
       Parameters parameters{};
 
-      double txTotal_bytes{};
-      double rxTotal_bytes{};
+      double tx_count{};
+      double rx_count{};
 
       std::map<std::string, int> pathToGetter{};
       std::vector<TGetter> getters{};
 
-      uWS::Loop* mainLoop{};
-      us_listen_socket_t* listenSocket{};
-      std::map<int32_t, PerSocketData*> socketData{};
-      std::map<int32_t, ClientData> clientData{};
+      uWS::Loop* main_loop{};
+      us_listen_socket_t* listen_socket{};
+      std::map<int32_t, PerSocketData*> socket_data{};
+      std::map<int32_t, ClientData> client_data{};
 
       std::map<std::string, TResourceContent> resources{};
 
@@ -144,11 +144,11 @@ namespace incpp
 
       Incppect()
       {
-         var("incppect.nclients", [this](const std::vector<int>&) { return view(socketData.size()); });
-         var("incppect.tx_total", [this](const std::vector<int>&) { return view(txTotal_bytes); });
-         var("incppect.rx_total", [this](const std::vector<int>&) { return view(rxTotal_bytes); });
+         var("incppect.nclients", [this](const std::vector<int>&) { return view(socket_data.size()); });
+         var("incppect.tx_total", [this](const std::vector<int>&) { return view(tx_count); });
+         var("incppect.rx_total", [this](const std::vector<int>&) { return view(rx_count); });
          var("incppect.ip_address[%d]", [this](const std::vector<int>& idxs) {
-            auto it = clientData.cbegin();
+            auto it = client_data.cbegin();
             std::advance(it, idxs[0]);
             return view(it->second.ip_address);
          });
@@ -166,14 +166,14 @@ namespace incpp
       // terminate the server instance
       void stop()
       {
-         if (mainLoop != nullptr) {
-            mainLoop->defer([this]() {
-               for (auto sd : socketData) {
-                  if (sd.second->mainLoop != nullptr) {
-                     sd.second->mainLoop->defer([sd]() { sd.second->ws->close(); });
+         if (main_loop != nullptr) {
+            main_loop->defer([this]() {
+               for (auto sd : socket_data) {
+                  if (sd.second->main_loop != nullptr) {
+                     sd.second->main_loop->defer([sd]() { sd.second->ws->close(); });
                   }
                }
-               us_listen_socket_close(0, listenSocket);
+               us_listen_socket_close(0, listen_socket);
             });
          }
       }
@@ -182,7 +182,7 @@ namespace incpp
       void setResource(const std::string& url, const TResourceContent& content) { resources[url] = content; }
 
       // number of connected clients
-      int32_t nConnected() const { return socketData.size(); }
+      int32_t nConnected() const { return socket_data.size(); }
 
       // run the main loop in dedicated thread
       // non-blocking call, returns the created std::future<void>
@@ -226,7 +226,7 @@ namespace incpp
 
       void run()
       {
-         mainLoop = uWS::Loop::get();
+         main_loop = uWS::Loop::get();
 
          constexpr std::string_view protocol = SSL ? "HTTPS" : "HTTP";
          print("[incppect] running instance. serving {} from '{}'\n", protocol, parameters.http_root);
@@ -239,7 +239,7 @@ namespace incpp
             static int32_t uniqueId = 1;
             ++uniqueId;
 
-            auto& cd = clientData[uniqueId];
+            auto& cd = client_data[uniqueId];
             cd.t_connected_ms = timestamp();
 
             auto addressBytes = ws->getRemoteAddress();
@@ -251,9 +251,9 @@ namespace incpp
             PerSocketData* sd = ws->getUserData();
             sd->clientId = uniqueId;
             sd->ws = ws;
-            sd->mainLoop = uWS::Loop::get();
+            sd->main_loop = uWS::Loop::get();
 
-            socketData.insert({uniqueId, sd});
+            socket_data.insert({uniqueId, sd});
 
             print("[incppect] client with id = {} connected\n", sd->clientId);
 
@@ -262,7 +262,7 @@ namespace incpp
             }
          };
          wsBehaviour.message = [this](auto* ws, std::string_view message, uWS::OpCode /*opCode*/) {
-            rxTotal_bytes += message.size();
+            rx_count += message.size();
             if (message.size() < sizeof(int)) {
                return;
             }
@@ -273,7 +273,7 @@ namespace incpp
             bool doUpdate = true;
 
             PerSocketData* sd = ws->getUserData();
-            auto& cd = clientData[sd->clientId];
+            auto& cd = client_data[sd->clientId];
 
             switch (type) {
             case 1: {
@@ -345,7 +345,7 @@ namespace incpp
             };
 
             if (doUpdate) {
-               sd->mainLoop->defer([this]() { this->update(); });
+               sd->main_loop->defer([this]() { this->update(); });
             }
          };
          wsBehaviour.drain = [this](auto* ws) {
@@ -364,8 +364,8 @@ namespace incpp
             PerSocketData* sd = ws->getUserData();
             print("[incppect] client with id = {} disconnected\n", sd->clientId);
 
-            clientData.erase(sd->clientId);
-            socketData.erase(sd->clientId);
+            client_data.erase(sd->clientId);
+            socket_data.erase(sd->clientId);
 
             if (handler) {
                handler(sd->clientId, event::disconnect, {nullptr, 0});
@@ -450,7 +450,7 @@ namespace incpp
          (*app)
             .listen(parameters.port_listen,
                     [this](auto* token) {
-                       this->listenSocket = token;
+                       this->listen_socket = token;
                        if (token) {
                           print("[incppect] listening on port {}\n", parameters.port_listen);
 
@@ -463,12 +463,12 @@ namespace incpp
 
       void update()
       {
-         for (auto& [clientId, cd] : clientData) {
-            if (socketData[clientId]->ws->getBufferedAmount()) {
+         for (auto& [clientId, cd] : client_data) {
+            if (socket_data[clientId]->ws->getBufferedAmount()) {
                print(
                   "[incppect] warning: buffered amount = {}, not sending updates to client {}. waiting for buffer to "
                   "drain\n",
-                  socketData[clientId]->ws->getBufferedAmount(), clientId);
+                  socket_data[clientId]->ws->getBufferedAmount(), clientId);
                continue;
             }
 
@@ -619,7 +619,7 @@ namespace incpp
                   // compress only for message larger than 64 bytes
                   bool doCompress = diff.size() > 64;
 
-                  if (socketData[clientId]->ws->send({diff.data(), diff.size()}, uWS::OpCode::BINARY, doCompress) ==
+                  if (socket_data[clientId]->ws->send({diff.data(), diff.size()}, uWS::OpCode::BINARY, doCompress) ==
                       false) {
                      print("[incpeect] warning: backpressure for client {} increased \n", clientId);
                   }
@@ -632,13 +632,13 @@ namespace incpp
 
                   // compress only for message larger than 64 bytes
                   const bool doCompress = buf.size() > 64;
-                  if (socketData[clientId]->ws->send({buf.data(), buf.size()}, uWS::OpCode::BINARY, doCompress) ==
+                  if (socket_data[clientId]->ws->send({buf.data(), buf.size()}, uWS::OpCode::BINARY, doCompress) ==
                       false) {
                      print("[incpeect] warning: backpressure for client {} increased \n", clientId);
                   }
                }
 
-               txTotal_bytes += buf.size();
+               tx_count += buf.size();
 
                prev = buf;
             }
