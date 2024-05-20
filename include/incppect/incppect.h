@@ -50,9 +50,9 @@ namespace incpp
       std::vector<int32_t> lastRequests;
       std::map<int32_t, Request> requests;
 
-      std::string curBuffer{};
-      std::string prevBuffer{};
-      std::string diffBuffer{};
+      std::string buf{}; // buffer
+      std::string prev{}; // previous buffer
+      std::string diff{}; // difference buffer
    };
 
    struct Parameters
@@ -473,14 +473,14 @@ namespace incpp
                continue;
             }
 
-            auto& curBuffer = cd.curBuffer;
-            auto& prevBuffer = cd.prevBuffer;
-            auto& diffBuffer = cd.diffBuffer;
+            auto& buf = cd.buf;
+            auto& prev = cd.prev;
+            auto& diff = cd.diff;
 
-            curBuffer.clear();
+            buf.clear();
 
             uint32_t typeAll = 0;
-            std::copy((char*)(&typeAll), (char*)(&typeAll) + sizeof(typeAll), std::back_inserter(curBuffer));
+            buf.append((char*)(&typeAll), sizeof(typeAll));
 
             for (auto& [requestId, req] : cd.requests) {
                auto& getter = getters[req.getterId];
@@ -513,16 +513,16 @@ namespace incpp
                      type = 1; // run-length encoding of diff
                   }
 
-                  curBuffer.append((char*)(&requestId), sizeof(requestId));
-                  curBuffer.append((char*)(&type), sizeof(type));
+                  buf.append((char*)(&requestId), sizeof(requestId));
+                  buf.append((char*)(&type), sizeof(type));
 
                   if (type == 0) {
-                     curBuffer.append((char*)(&dataSize_bytes), sizeof(dataSize_bytes));
-                     curBuffer.append(req.curData);
+                     buf.append((char*)(&dataSize_bytes), sizeof(dataSize_bytes));
+                     buf.append(req.curData);
                      {
                         char v = 0;
                         for (int i = 0; i < padding_bytes; ++i) {
-                           curBuffer.append((char*)(&v), sizeof(v));
+                           buf.append((char*)(&v), sizeof(v));
                         }
                      }
                   }
@@ -573,76 +573,76 @@ namespace incpp
                      req.diffData.append((char*)(&c), sizeof(uint32_t));
 
                      dataSize_bytes = req.diffData.size();
-                     curBuffer.append((char*)(&dataSize_bytes), sizeof(dataSize_bytes));
-                     curBuffer.append(req.diffData);
+                     buf.append((char*)(&dataSize_bytes), sizeof(dataSize_bytes));
+                     buf.append(req.diffData);
                   }
 
                   req.prevData = req.curData;
                }
             }
 
-            if (curBuffer.size() > 4) {
-               if (curBuffer.size() == prevBuffer.size() && curBuffer.size() > 256) {
+            if (buf.size() > 4) {
+               if (buf.size() == prev.size() && buf.size() > 256) {
                   uint32_t a = 0;
                   uint32_t b = 0;
                   uint32_t c = 0;
                   uint32_t n = 0;
-                  diffBuffer.clear();
+                  diff.clear();
 
                   uint32_t typeAll = 1;
-                  diffBuffer.append((char*)(&typeAll), sizeof(typeAll));
+                  diff.append((char*)(&typeAll), sizeof(typeAll));
 
-                  for (int i = 4; i < (int)curBuffer.size(); i += 4) {
-                     std::memcpy(&a, prevBuffer.data() + i, sizeof(uint32_t));
-                     std::memcpy(&b, curBuffer.data() + i, sizeof(uint32_t));
+                  for (int i = 4; i < (int)buf.size(); i += 4) {
+                     std::memcpy(&a, prev.data() + i, sizeof(uint32_t));
+                     std::memcpy(&b, buf.data() + i, sizeof(uint32_t));
                      a = a ^ b;
                      if (a == c) {
                         ++n;
                      }
                      else {
                         if (n > 0) {
-                           diffBuffer.append((char*)(&n), sizeof(uint32_t));
-                           diffBuffer.append((char*)(&c), sizeof(uint32_t));
+                           diff.append((char*)(&n), sizeof(uint32_t));
+                           diff.append((char*)(&c), sizeof(uint32_t));
                         }
                         n = 1;
                         c = a;
                      }
                   }
 
-                  diffBuffer.append((char*)(&n), sizeof(uint32_t));
-                  diffBuffer.append((char*)(&c), sizeof(uint32_t));
+                  diff.append((char*)(&n), sizeof(uint32_t));
+                  diff.append((char*)(&c), sizeof(uint32_t));
 
-                  if ((int32_t)diffBuffer.size() > parameters.maxPayloadLength_bytes) {
+                  if ((int32_t)diff.size() > parameters.maxPayloadLength_bytes) {
                      print("[incppect] warning: buffer size ({}) exceeds maxPayloadLength ({})\n",
-                               diffBuffer.size(), parameters.maxPayloadLength_bytes);
+                               diff.size(), parameters.maxPayloadLength_bytes);
                   }
 
                   // compress only for message larger than 64 bytes
-                  bool doCompress = diffBuffer.size() > 64;
+                  bool doCompress = diff.size() > 64;
 
-                  if (socketData[clientId]->ws->send({diffBuffer.data(), diffBuffer.size()}, uWS::OpCode::BINARY,
+                  if (socketData[clientId]->ws->send({diff.data(), diff.size()}, uWS::OpCode::BINARY,
                                                      doCompress) == false) {
                      print("[incpeect] warning: backpressure for client {} increased \n", clientId);
                   }
                }
                else {
-                  if ((int32_t)curBuffer.size() > parameters.maxPayloadLength_bytes) {
+                  if ((int32_t)buf.size() > parameters.maxPayloadLength_bytes) {
                      print("[incppect] warning: buffer size ({}) exceeds maxPayloadLength ({})\n",
-                               (int)curBuffer.size(), parameters.maxPayloadLength_bytes);
+                               (int)buf.size(), parameters.maxPayloadLength_bytes);
                   }
 
                   // compress only for message larger than 64 bytes
-                  bool doCompress = curBuffer.size() > 64;
+                  bool doCompress = buf.size() > 64;
 
-                  if (socketData[clientId]->ws->send({curBuffer.data(), curBuffer.size()}, uWS::OpCode::BINARY,
+                  if (socketData[clientId]->ws->send({buf.data(), buf.size()}, uWS::OpCode::BINARY,
                                                      doCompress) == false) {
                      print("[incpeect] warning: backpressure for client {} increased \n", clientId);
                   }
                }
 
-               txTotal_bytes += curBuffer.size();
+               txTotal_bytes += buf.size();
 
-               prevBuffer = curBuffer;
+               prev = buf;
             }
          }
       }
