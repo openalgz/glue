@@ -21,13 +21,13 @@ int main(int argc, char** argv)
       using enum incppect::event;
       switch (etype) {
       case connect: {
-         printf("Client %d connected\n", client_id);
+         std::printf("Client %d connected\n", client_id);
       } break;
       case disconnect: {
-         printf("Client %d disconnected\n", client_id);
+         std::printf("Client %d disconnected\n", client_id);
       } break;
       case custom: {
-         printf("Client %d: '%s'\n", client_id, std::string(data.data(), data.size()).c_str());
+         std::printf("Client %d: '%s'\n", client_id, std::string(data.data(), data.size()).c_str());
       } break;
       };
    };
