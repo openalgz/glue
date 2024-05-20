@@ -31,29 +31,29 @@ struct State
 {
    State()
    {
-      incppect::getInstance().var("state.dt", [this](const auto&) { return incppect::view(dt); });
+      incppect::getInstance().var("state.dt", [this](const auto&) { return incpp::view(dt); });
 
       incppect::getInstance().var("state.nballs", [this](const auto&) {
          static int n = 0;
          n = balls.size();
-         return incppect::view(n);
+         return incpp::view(n);
       });
 
-      incppect::getInstance().var("state.dt", [this](const auto&) { return incppect::view(dt); });
-      incppect::getInstance().var("state.energy", [this](const auto&) { return incppect::view(energy); });
+      incppect::getInstance().var("state.dt", [this](const auto&) { return incpp::view(dt); });
+      incppect::getInstance().var("state.energy", [this](const auto&) { return incpp::view(energy); });
 
       incppect::getInstance().var("state.ball[%d].r",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].r); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].r); });
       incppect::getInstance().var("state.ball[%d].m",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].m); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].m); });
       incppect::getInstance().var("state.ball[%d].x",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].x); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].x); });
       incppect::getInstance().var("state.ball[%d].y",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].y); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].y); });
       incppect::getInstance().var("state.ball[%d].vx",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].vx); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].vx); });
       incppect::getInstance().var("state.ball[%d].vy",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].vy); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].vy); });
    }
 
    void init(int nBalls)
@@ -166,7 +166,7 @@ int main(int argc, char** argv)
    auto future = incppect::getInstance().run_async(parameters);
 
    float checkpoint = 0.0f;
-   
+
    while (true) {
       if (state.t > checkpoint) {
          printf(" - Simulating 2D elastic collisions at t = %4.2f ...\n", state.t);

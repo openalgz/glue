@@ -36,33 +36,33 @@ struct State
 {
    State()
    {
-      incppect::getInstance().var("state.dt", [this](const auto&) { return incppect::view(dt); });
+      incppect::getInstance().var("state.dt", [this](const auto&) { return incpp::view(dt); });
 
       incppect::getInstance().var("state.nballs", [this](const auto&) {
          static int n = 0;
          n = balls.size();
-         return incppect::view(n);
+         return incpp::view(n);
       });
 
-      incppect::getInstance().var("state.dt", [this](const auto&) { return incppect::view(dt); });
-      incppect::getInstance().var("state.energy", [this](const auto&) { return incppect::view(energy); });
+      incppect::getInstance().var("state.dt", [this](const auto&) { return incpp::view(dt); });
+      incppect::getInstance().var("state.energy", [this](const auto&) { return incpp::view(energy); });
 
       incppect::getInstance().var("state.ball[%d].r",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].r); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].r); });
       incppect::getInstance().var("state.ball[%d].m",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].m); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].m); });
       incppect::getInstance().var("state.ball[%d].x",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].x); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].x); });
       incppect::getInstance().var("state.ball[%d].y",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].y); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].y); });
       incppect::getInstance().var("state.ball[%d].z",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].z); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].z); });
       incppect::getInstance().var("state.ball[%d].vx",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].vx); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].vx); });
       incppect::getInstance().var("state.ball[%d].vy",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].vy); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].vy); });
       incppect::getInstance().var("state.ball[%d].vz",
-                                  [this](const auto& idxs) { return incppect::view(balls[idxs[0]].vz); });
+                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].vz); });
    }
 
    void init(int nBalls)

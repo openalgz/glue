@@ -27,13 +27,13 @@ int main(int argc, char** argv)
 
    const char* var_str = "hello browser";
 
-   incppect::getInstance().var("var_int8", [&](auto) { return incppect::view(var_int8); });
-   incppect::getInstance().var("var_int16", [&](auto) { return incppect::view(var_int16); });
-   incppect::getInstance().var("var_int32", [&](auto) { return incppect::view(var_int32); });
-   incppect::getInstance().var("var_int32_arr", [&](auto) { return incppect::view(var_arr32); });
-   incppect::getInstance().var("var_int32_arr[%d]", [&](auto idxs) { return incppect::view(var_arr32[idxs[0]]); });
-   incppect::getInstance().var("var_float", [&](auto) { return incppect::view(var_float); });
-   incppect::getInstance().var("var_double", [&](auto) { return incppect::view(var_double); });
+   incppect::getInstance().var("var_int8", [&](auto) { return incpp::view(var_int8); });
+   incppect::getInstance().var("var_int16", [&](auto) { return incpp::view(var_int16); });
+   incppect::getInstance().var("var_int32", [&](auto) { return incpp::view(var_int32); });
+   incppect::getInstance().var("var_int32_arr", [&](auto) { return incpp::view(var_arr32); });
+   incppect::getInstance().var("var_int32_arr[%d]", [&](auto idxs) { return incpp::view(var_arr32[idxs[0]]); });
+   incppect::getInstance().var("var_float", [&](auto) { return incpp::view(var_float); });
+   incppect::getInstance().var("var_double", [&](auto) { return incpp::view(var_double); });
    incppect::getInstance().var("var_str", [&](auto) { return var_str; });
 
    while (true) {

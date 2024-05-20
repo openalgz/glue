@@ -74,6 +74,24 @@ namespace incpp
       // etc.
    };
 
+   // shorthand for string_view from var
+   template <class T>
+   inline std::string_view view(T& v)
+   {
+      if constexpr (std::same_as<std::decay_t<T>, std::string>) {
+         return std::string_view{v.data(), v.size()};
+      }
+      return std::string_view{(char*)(&v), sizeof(v)};
+   }
+
+   template <class T>
+   inline std::string_view view(T&& v)
+   {
+      static T t;
+      t = std::move(v);
+      return std::string_view{(char*)(&t), sizeof(t)};
+   }
+
    template <bool SSL>
    struct Incppect
    {
@@ -105,7 +123,7 @@ namespace incpp
          uWS::WebSocket<SSL, true, PerSocketData>* ws{};
       };
 
-      Parameters parameters;
+      Parameters parameters{};
 
       double txTotal_bytes{};
       double rxTotal_bytes{};
@@ -189,24 +207,6 @@ namespace incpp
          getters.emplace_back(std::move(getter));
 
          return true;
-      }
-
-      // shorthand for string_view from var
-      template <class T>
-      static std::string_view view(T& v)
-      {
-         if constexpr (std::is_same<T, std::string>::value) {
-            return std::string_view{v.data(), v.size()};
-         }
-         return std::string_view{(char*)(&v), sizeof(v)};
-      }
-
-      template <class T>
-      static std::string_view view(T&& v)
-      {
-         static T t;
-         t = std::move(v);
-         return std::string_view{(char*)(&t), sizeof(t)};
       }
 
       // get global instance
@@ -336,7 +336,8 @@ namespace incpp
             case 4: {
                doUpdate = false;
                if (handler && message.size() > sizeof(int32_t)) {
-                  handler(sd->clientId, event::custom, {message.data() + sizeof(int32_t), message.size() - sizeof(int32_t)});
+                  handler(sd->clientId, event::custom,
+                          {message.data() + sizeof(int32_t), message.size() - sizeof(int32_t)});
                }
             } break;
             default:
