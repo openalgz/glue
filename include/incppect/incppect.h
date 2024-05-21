@@ -127,7 +127,7 @@ namespace incpp
       double tx_count{};
       double rx_count{};
 
-      std::map<std::string, int> pathToGetter{};
+      std::unordered_map<std::string, int> pathToGetter{};
       std::vector<getter_t> getters{};
 
       uWS::Loop* main_loop{};
