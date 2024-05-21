@@ -133,18 +133,29 @@ namespace incpp
       uWS::Loop* main_loop{};
       us_listen_socket_t* listen_socket{};
       std::map<int32_t, PerSocketData*> socket_data{};
+      size_t nclients{}; // intermediate memory
       std::map<int32_t, ClientData> client_data{};
 
       std::map<std::string, std::string> resources{};
 
       handler_t handler{};
 
+      struct glaze 
+      {
+         using T = Incppect;
+         static constexpr auto n_clients = [](auto& s) -> auto& {
+            s.nclients = s.socket_data.size();
+            return s.nclients;
+         };
+         //static constexpr auto value = glz::object("nclients", n_clients, &T::tx_count, &T::rx_count, &T::ip_address);
+      };
+
       Incppect()
       {
-         var("incppect.nclients", [this](const std::vector<int>&) { return view(socket_data.size()); });
-         var("incppect.tx_total", [this](const std::vector<int>&) { return view(tx_count); });
-         var("incppect.rx_total", [this](const std::vector<int>&) { return view(rx_count); });
-         var("incppect.ip_address[%d]", [this](const std::vector<int>& idxs) {
+         var("/incppect/nclients", [this](const std::vector<int>&) { return view(socket_data.size()); });
+         var("/incppect/tx_total", [this](const std::vector<int>&) { return view(tx_count); });
+         var("/incppect/rx_total", [this](const std::vector<int>&) { return view(rx_count); });
+         var("/incppect/ip_address/{}", [this](const std::vector<int>& idxs) {
             auto it = client_data.cbegin();
             std::advance(it, idxs[0]);
             return view(it->second.ip_address);
