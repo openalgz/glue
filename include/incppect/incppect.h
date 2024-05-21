@@ -429,7 +429,7 @@ namespace incpp
          }
          (*app).get("/*", [this](auto* res, auto* req) {
             const auto url{req->getUrl()};
-            print("url = '{}'\n", url);
+            this->print("url = '{}'\n", url); // this-> hides incorrect warnings
             res->end("Resource not found");
             return;
          });
