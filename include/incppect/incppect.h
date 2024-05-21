@@ -45,8 +45,8 @@ namespace incpp
 
       std::array<uint8_t, 4> ip_address{};
 
-      std::vector<int32_t> last_requests;
-      std::map<int32_t, Request> requests;
+      std::vector<int32_t> last_requests{};
+      std::map<int32_t, Request> requests{};
 
       std::string buf{}; // buffer
       std::string prev{}; // previous buffer
@@ -267,7 +267,7 @@ namespace incpp
             int32_t type;
             std::memcpy(&type, message.data(), sizeof(type));
 
-            bool doUpdate = true;
+            bool do_update = true;
 
             PerSocketData* sd = ws->getUserData();
             auto& cd = client_data[sd->client_id];
@@ -305,19 +305,19 @@ namespace incpp
                break;
             }
             case 2: {
-               int nRequests = (message.size() - sizeof(int32_t)) / sizeof(int32_t);
-               if (nRequests * sizeof(int32_t) + sizeof(int32_t) != message.size()) {
+               const size_t n_requests = (message.size() - sizeof(int32_t)) / sizeof(int32_t);
+               if (n_requests * sizeof(int32_t) + sizeof(int32_t) != message.size()) {
                   print("[incppect] error : invalid message data!\n");
                   return;
                }
-               print("[incppect] received requests: {}\n", nRequests);
+               print("[incppect] received requests: {}\n", n_requests);
 
                cd.last_requests.clear();
-               for (int i = 0; i < nRequests; ++i) {
+               for (size_t i = 0; i < n_requests; ++i) {
                   int32_t req_id;
                   std::memcpy(&req_id, message.data() + 4 * (i + 1), sizeof(req_id));
                   if (cd.requests.contains(req_id)) {
-                     cd.last_requests.push_back(req_id);
+                     cd.last_requests.emplace_back(req_id);
                      cd.requests[req_id].t_last_req_ms = timestamp();
                      cd.requests[req_id].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
                   }
@@ -334,7 +334,7 @@ namespace incpp
                break;
             }
             case 4: {
-               doUpdate = false;
+               do_update = false;
                if (handler && message.size() > sizeof(int32_t)) {
                   handler(sd->client_id, event::custom,
                           {message.data() + sizeof(int32_t), message.size() - sizeof(int32_t)});
@@ -345,7 +345,7 @@ namespace incpp
                print("[incppect] unknown message type: {}\n", type);
             };
 
-            if (doUpdate) {
+            if (do_update) {
                sd->main_loop->defer([this] { this->update(); });
             }
          };
