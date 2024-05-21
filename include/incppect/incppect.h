@@ -213,14 +213,6 @@ namespace incpp
          return instance;
       }
 
-      inline bool hasExt(std::string_view file, std::string_view ext)
-      {
-         if (ext.size() > file.size()) {
-            return false;
-         }
-         return std::equal(ext.rbegin(), ext.rend(), file.rbegin());
-      }
-
       void run()
       {
          main_loop = uWS::Loop::get();
@@ -430,7 +422,7 @@ namespace incpp
                   return;
                }
 
-               if (hasExt(req->getUrl(), ".js")) {
+               if (req->getUrl().ends_with(".js")) {
                   res->writeHeader("Content-Type", "text/javascript");
                }
 
