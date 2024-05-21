@@ -57,7 +57,7 @@ namespace incpp
 
    struct Parameters
    {
-      int32_t port_listen = 3000;
+      int32_t port = 3000;
       int32_t max_payload = 256 * 1024;
       int64_t t_last_req_timeout_ms = 3000;
       int32_t t_idle_timeout_s = 120;
@@ -114,8 +114,8 @@ namespace incpp
          custom,
       };
 
-      using TGetter = std::function<std::string_view(const std::vector<int>& idxs)>;
-      using THandler = std::function<void(int32_t client_id, event etype, std::string_view)>;
+      using getter_t = std::function<std::string_view(const std::vector<int>& idxs)>;
+      using handler_t = std::function<void(int32_t client_id, event etype, std::string_view)>;
 
       struct PerSocketData final
       {
@@ -130,7 +130,7 @@ namespace incpp
       double rx_count{};
 
       std::map<std::string, int> pathToGetter{};
-      std::vector<TGetter> getters{};
+      std::vector<getter_t> getters{};
 
       uWS::Loop* main_loop{};
       us_listen_socket_t* listen_socket{};
@@ -139,7 +139,7 @@ namespace incpp
 
       std::map<std::string, std::string> resources{};
 
-      THandler handler{};
+      handler_t handler{};
 
       Incppect()
       {
@@ -199,7 +199,7 @@ namespace incpp
       //   var("path1[%d]", [](auto idxs) { ... idxs[0] ... });
       //   var("path2[%d].foo[%d]", [](auto idxs) { ... idxs[0], idxs[1] ... });
       //
-      bool var(const std::string& path, TGetter&& getter)
+      bool var(const std::string& path, getter_t&& getter)
       {
          pathToGetter[path] = getters.size();
          getters.emplace_back(std::move(getter));
@@ -430,19 +430,19 @@ namespace incpp
             });
          }
          (*app).get("/*", [this](auto* res, auto* req) {
-            const std::string url{req->getUrl()};
+            const auto url{req->getUrl()};
             print("url = '{}'\n", url);
             res->end("Resource not found");
             return;
          });
          (*app)
-            .listen(parameters.port_listen,
+            .listen(parameters.port,
                     [this](auto* token) {
                        this->listen_socket = token;
                        if (token) {
-                          print("[incppect] listening on port {}\n", parameters.port_listen);
+                          print("[incppect] listening on port {}\n", parameters.port);
                           const char* kProtocol = SSL ? "https" : "http";
-                          print("[incppect] {}://localhost:{}/\n", kProtocol, parameters.port_listen);
+                          print("[incppect] {}://localhost:{}/\n", kProtocol, parameters.port);
                        }
                     })
             .run();
@@ -612,14 +612,14 @@ namespace incpp
                   }
                }
                else {
-                  if ((int32_t)buf.size() > parameters.max_payload) {
+                  if (int32_t(buf.size()) > parameters.max_payload) {
                      print("[incppect] warning: buffer size ({}) exceeds maxPayloadLength ({})\n", (int)buf.size(),
                            parameters.max_payload);
                   }
 
                   // compress only for message larger than 64 bytes
-                  const bool doCompress = buf.size() > 64;
-                  if (socket_data[client_id]->ws->send({buf.data(), buf.size()}, uWS::OpCode::BINARY, doCompress) ==
+                  const bool compress = buf.size() > 64;
+                  if (socket_data[client_id]->ws->send({buf.data(), buf.size()}, uWS::OpCode::BINARY, compress) ==
                       false) {
                      print("[incpeect] warning: backpressure for client {} increased \n", client_id);
                   }
