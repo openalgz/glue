@@ -305,21 +305,21 @@ namespace incpp
 
                cd.last_requests.clear();
                for (int i = 0; i < nRequests; ++i) {
-                  int32_t curRequest = -1;
-                  std::memcpy((char*)(&curRequest), message.data() + 4 * (i + 1), sizeof(curRequest));
-                  if (cd.requests.contains(curRequest)) {
-                     cd.last_requests.push_back(curRequest);
-                     cd.requests[curRequest].t_last_req_ms = timestamp();
-                     cd.requests[curRequest].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
+                  int32_t req_id;
+                  std::memcpy(&req_id, message.data() + 4 * (i + 1), sizeof(req_id));
+                  if (cd.requests.contains(req_id)) {
+                     cd.last_requests.push_back(req_id);
+                     cd.requests[req_id].t_last_req_ms = timestamp();
+                     cd.requests[req_id].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
                   }
                }
                break;
             }
             case 3: {
-               for (auto curRequest : cd.last_requests) {
-                  if (cd.requests.contains(curRequest)) {
-                     cd.requests[curRequest].t_last_req_ms = timestamp();
-                     cd.requests[curRequest].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
+               for (auto req_id : cd.last_requests) {
+                  if (cd.requests.contains(req_id)) {
+                     cd.requests[req_id].t_last_req_ms = timestamp();
+                     cd.requests[req_id].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
                   }
                }
                break;
@@ -337,7 +337,7 @@ namespace incpp
             };
 
             if (doUpdate) {
-               sd->main_loop->defer([this]() { this->update(); });
+               sd->main_loop->defer([this] { this->update(); });
             }
          };
          wsBehaviour.drain = [this](auto* ws) {
@@ -357,7 +357,7 @@ namespace incpp
             socket_data.erase(sd->client_id);
 
             if (handler) {
-               handler(sd->client_id, event::disconnect, {nullptr, 0});
+               handler(sd->client_id, event::disconnect, {});
             }
          };
 
@@ -441,8 +441,8 @@ namespace incpp
                        this->listen_socket = token;
                        if (token) {
                           print("[incppect] listening on port {}\n", parameters.port);
-                          const char* kProtocol = SSL ? "https" : "http";
-                          print("[incppect] {}://localhost:{}/\n", kProtocol, parameters.port);
+                          constexpr std::string_view protocol = SSL ? "https" : "http";
+                          print("[incppect] {}://localhost:{}/\n", protocol, parameters.port);
                        }
                     })
             .run();
