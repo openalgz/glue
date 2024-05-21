@@ -136,7 +136,7 @@ namespace incpp
       size_t nclients{}; // intermediate memory
       std::map<int32_t, ClientData> client_data{};
 
-      std::map<std::string, std::string> resources{};
+      std::unordered_map<std::string, std::string> resources{};
 
       handler_t handler{};
 
