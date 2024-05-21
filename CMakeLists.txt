@@ -49,6 +49,17 @@ endif ()
 option(INCPPECT_DEBUG   "Enable debug messages in the incppect service" OFF)
 option(INCPPECT_NO_SSL  "Disable SSL support" ON)
 
+include(FetchContent)
+
+FetchContent_Declare(
+  glaze
+  GIT_REPOSITORY https://github.com/stephenberry/glaze.git
+  GIT_TAG main
+  GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(glaze)
+
 find_package(Threads REQUIRED)
 find_package(ZLIB REQUIRED)
 
@@ -82,7 +93,7 @@ target_include_directories(incppect_incppect INTERFACE)
 
 find_uwebsockets()
 
-target_link_libraries(incppect_incppect INTERFACE uWS)
+target_link_libraries(incppect_incppect INTERFACE uWS glaze::glaze)
 
 #if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_subdirectory(examples)

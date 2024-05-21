@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdio>
@@ -8,15 +7,14 @@
 #include <functional>
 #include <future>
 #include <map>
-#include <memory>
 #include <sstream>
-#include <string>
-#include <string_view>
 #include <thread>
 #include <vector>
 
 #include "App.h" // uWebSockets
 #include "common.h"
+
+#include "glaze/glaze.hpp"
 
 namespace incpp
 {
@@ -364,7 +362,7 @@ namespace incpp
          std::unique_ptr<uWS::TemplatedApp<SSL>> app{};
 
          if constexpr (SSL) {
-            uWS::SocketContextOptions ssl_options = {};
+            uWS::SocketContextOptions ssl_options{};
 
             ssl_options.key_file_name = parameters.ssl_key.data();
             ssl_options.cert_file_name = parameters.ssl_cert.data();
