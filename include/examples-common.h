@@ -129,9 +129,9 @@ namespace examples
 
       std::cout << "\nurl: localhost:" << port << std::endl;
 
-      return incpp::Parameters{.portListen = port,
-                               .maxPayloadLength_bytes = 256 * 1024,
-                               .httpRoot = httpRoot + "/" + std::string(example_name),
+      return incpp::Parameters{.port = port,
+                               .max_payload = 256 * 1024,
+                               .http_root = httpRoot + "/" + std::string(example_name),
                                .resources = {"", index_file_name.data()}};
    }
 
