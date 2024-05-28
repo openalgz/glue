@@ -95,6 +95,6 @@ find_uwebsockets()
 
 target_link_libraries(incppect_incppect INTERFACE uWS glaze::glaze)
 
-#if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_subdirectory(examples)
-#endif ()
+endif ()
