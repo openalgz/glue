@@ -13,14 +13,14 @@ inline float frand() { return (float)(rand()) / RAND_MAX; }
 
 struct Ball
 {
-   float r = 0.0f;
-   float m = 0.0f;
+   float r{};
+   float m{};
 
-   float x = 0.0f;
-   float y = 0.0f;
+   float x{};
+   float y{};
 
-   float vx = 0.0f;
-   float vy = 0.0f;
+   float vx{};
+   float vy{};
 };
 
 float dist2(const float r0, const float r1) { return (r0 + r1) * (r0 + r1); }
@@ -29,31 +29,21 @@ float dist2(const Ball& c0, const Ball& c1) { return (c0.x - c1.x) * (c0.x - c1.
 
 struct State
 {
+   float t = 0.000f;
+   float dt = 0.001f;
+   float energy = 0.0f;
+
+   std::vector<Ball> balls;
+   size_t nballs{}; // intermediate state
+
+   struct glaze {
+      using T = State;
+      static constexpr auto value = glz::object(&T::t, &T::dt, &T::energy, &T::balls, &T::nballs);
+   };
+
    State()
    {
-      incppect::getInstance().var("/state/dt", [this](const auto&) { return incpp::view(dt); });
-
-      incppect::getInstance().var("/state/nballs", [this](const auto&) {
-         static int n = 0;
-         n = balls.size();
-         return incpp::view(n);
-      });
-
-      incppect::getInstance().var("/state/dt", [this](const auto&) { return incpp::view(dt); });
-      incppect::getInstance().var("/state/energy", [this](const auto&) { return incpp::view(energy); });
-
-      incppect::getInstance().var("/state/balls/{}/r",
-                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].r); });
-      incppect::getInstance().var("/state/balls/{}/m",
-                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].m); });
-      incppect::getInstance().var("/state/balls/{}/x",
-                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].x); });
-      incppect::getInstance().var("/state/balls/{}/y",
-                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].y); });
-      incppect::getInstance().var("/state/balls/{}/vx",
-                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].vx); });
-      incppect::getInstance().var("/state/balls/{}/vy",
-                                  [this](const auto& idxs) { return incpp::view(balls[idxs[0]].vy); });
+      incppect::getInstance().on<glz::root<"state">>(*this);
    }
 
    void init(int nBalls)
@@ -143,12 +133,6 @@ struct State
 
       t += dt;
    }
-
-   float t = 0.000f;
-   float dt = 0.001f;
-   float energy = 0.0f;
-
-   std::vector<Ball> balls;
 };
 
 int main(int argc, char** argv)

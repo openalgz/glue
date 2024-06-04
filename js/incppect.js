@@ -6,10 +6,7 @@ var incppect = {
     ws_uri: 'ws://' + window.location.hostname + ':' + window.location.port + '/incppect',
 
     // vars data
-    nvars: 0,
     vars_map: {},
-    var_to_id: {},
-    id_to_var: {},
     last_data: null,
 
     // requests data
@@ -24,7 +21,6 @@ var incppect = {
     t_requests_last_update_ms: null,
 
     // constants
-    k_var_delim: ' ',
     k_auto_reconnect: true,
     k_requests_update_freq_ms: 50,
 
@@ -100,123 +96,22 @@ var incppect = {
         window.requestAnimationFrame(this.loop.bind(this));
     },
 
-    get: function (path, ...args) {
-        for (var i = 1; i < arguments.length; i++) {
-            path = path.replace('{}', arguments[i]);
-        }
-
+    get: function (path) {
         if (!(path in this.vars_map)) {
-            this.vars_map[path] = new ArrayBuffer();
-            this.var_to_id[path] = this.nvars;
-            this.id_to_var[this.nvars] = path;
-            ++this.nvars;
-
+            this.vars_map[path] = new Uint8Array();
             this.requests_new_vars = true;
         }
 
         if (this.requests_regenerate) {
-            this.requests.push(this.var_to_id[path]);
+            this.requests.push(path);
         }
 
         return this.vars_map[path];
     },
 
-    get_abuf: function (path, ...args) {
-        return this.get(path, ...args);
-    },
-
-    get_int8: function (path, ...args) {
-        return this.get_int8_arr(path, ...args)[0];
-    },
-
-    get_int8_arr: function (path, ...args) {
-        var abuf = this.get(path, ...args);
-        return new Int8Array(abuf);
-    },
-
-    get_uint8: function (path, ...args) {
-        return this.get_uint8_arr(path, ...args)[0];
-    },
-
-    get_uint8_arr: function (path, ...args) {
-        var abuf = this.get(path, ...args);
-        return new Uint8Array(abuf);
-    },
-
-    get_int16: function (path, ...args) {
-        return this.get_int16_arr(path, ...args)[0];
-    },
-
-    get_int16_arr: function (path, ...args) {
-        var abuf = this.get(path, ...args);
-        return new Int16Array(abuf);
-    },
-
-    get_uint16: function (path, ...args) {
-        return this.get_uint16_arr(path, ...args)[0];
-    },
-
-    get_uint16_arr: function (path, ...args) {
-        var abuf = this.get(path, ...args);
-        return new Uint16Array(abuf);
-    },
-
-    get_int32: function (path, ...args) {
-        return this.get_int32_arr(path, ...args)[0];
-    },
-
-    get_int32_arr: function (path, ...args) {
-        var abuf = this.get(path, ...args);
-        return new Int32Array(abuf);
-    },
-
-    get_uint32: function (path, ...args) {
-        return this.get_uint32_arr(path, ...args)[0];
-    },
-
-    get_uint32_arr: function (path, ...args) {
-        var abuf = this.get(path, ...args);
-        return new Uint32Array(abuf);
-    },
-
-    get_float: function (path, ...args) {
-        return this.get_float_arr(path, ...args)[0];
-    },
-
-    get_float_arr: function (path, ...args) {
-        var abuf = this.get(path, ...args);
-        return new Float32Array(abuf);
-    },
-
-    get_double: function (path, ...args) {
-        return this.get_double_arr(path, ...args)[0];
-    },
-
-    get_double_arr: function (path, ...args) {
-        var abuf = this.get(path, ...args);
-        return new Float64Array(abuf);
-    },
-
-    get_str: function (path, ...args) {
-        var abuf = this.get(path, ...args);
-        var enc = new TextDecoder("utf-8");
-        var res = enc.decode(new Uint8Array(abuf));
-        var output = "";
-        for (var i = 0; i < res.length; i++) {
-            if (res.charCodeAt(i) == 0) break;
-            if (res.charCodeAt(i) <= 127) {
-                output += res.charAt(i);
-            }
-        }
-        return output;
-    },
-
     send: function (msg) {
         var enc_msg = new TextEncoder().encode(msg);
-        var data = new Int8Array(4 + enc_msg.length + 1);
-        data[0] = 4;
-        data.set(enc_msg, 4);
-        data[4 + enc_msg.length] = 0;
+        var data = write_beve([4, enc_msg]);
         this.ws.send(data);
 
         this.stats.tx_n += 1;
@@ -224,28 +119,7 @@ var incppect = {
     },
 
     send_var_to_id_map: function () {
-        var msg = '';
-        var delim = this.k_var_delim;
-        for (var key in this.var_to_id) {
-            var nidxs = 0;
-            var idxs = delim;
-            //var keyp = key.replace(/\[-?\d*\]/g, function (m) { ++nidxs; idxs += m.replace(/[\[\]]/g, '') + delim; return '[%d]'; });
-
-            // replace /# with /{}
-            var keyp = key.replace(/\/-?\d+/g, function (m) {
-                ++nidxs;
-                idxs += m.replace(/\//g, '') + delim; // Remove the leading '/' and append to idxs
-                return '/{}';
-            });
-            console.log(idxs);
-
-            msg += keyp + delim + this.var_to_id[key].toString() + delim + nidxs + idxs;
-        }
-        var data = new Int8Array(4 + msg.length + 1);
-        var enc = new TextEncoder();
-        data[0] = 1;
-        data.set(enc.encode(msg), 4);
-        data[4 + msg.length] = 0;
+        var data = write_beve([1, Object.keys(vars_map)]);
         this.ws.send(data);
 
         this.stats.tx_n += 1;
@@ -265,17 +139,15 @@ var incppect = {
             }
         }
 
+        // If the request buffer is the same, don't resend it, just send a message saying use the old request
         if (same) {
-            var data = new Int32Array(1);
-            data[0] = 3;
+            var data = write_beve([3]);
             this.ws.send(data);
 
             this.stats.tx_n += 1;
             this.stats.tx_bytes += data.length;
         } else {
-            var data = new Int32Array(this.requests.length + 1);
-            data.set(new Int32Array(this.requests), 1);
-            data[0] = 2;
+            var data = write_beve([2, this.requests]);
             this.ws.send(data);
 
             this.stats.tx_n += 1;
@@ -287,21 +159,21 @@ var incppect = {
     },
 
     onclose: function (evt) {
-        this.nvars = 0;
         this.vars_map = {};
-        this.var_to_id = {};
-        this.id_to_var = {};
         this.requests = null;
         this.requests_old = null;
         this.ws = null;
     },
 
+    // on receive
+    // evt input is from websocket
     onmessage: function (evt) {
         this.stats.rx_n += 1;
         this.stats.rx_bytes += evt.data.byteLength;
 
         var type_all = (new Uint32Array(evt.data))[0];
 
+        // decompression
         if (this.last_data != null && type_all == 1) {
             var ntotal = evt.data.byteLength / 4 - 1;
 
@@ -321,7 +193,7 @@ var incppect = {
             this.last_data = evt.data;
         }
 
-        var int_view = new Uint32Array(this.last_data);
+        var int_view = new Uint32Array(this.last_data); // TODO: don't copy
         var offset = 1;
         var offset_new = 0;
         var total_size = this.last_data.byteLength;

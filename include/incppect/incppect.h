@@ -6,15 +6,19 @@
 #include <fstream>
 #include <functional>
 #include <future>
+#include <glaze/exceptions/binary_exceptions.hpp>
 #include <map>
 #include <sstream>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 
 #include "App.h" // uWebSockets
 #include "common.h"
 
-#include "glaze/glaze.hpp"
+#include "glaze/glaze_exceptions.hpp"
+#include "glaze/json/json_ptr.hpp"
+#include "glaze/rpc/repe.hpp"
 
 namespace incpp
 {
@@ -26,13 +30,12 @@ namespace incpp
 
    struct Request
    {
+      glz::repe::header header{};
+      
       int64_t t_last_update_ms = -1;
       int64_t t_last_req_ms = -1;
       int64_t t_min_update_ms = 16;
       int64_t t_last_req_timeout_ms = 3000;
-
-      std::vector<int> idxs{};
-      int32_t getter_id = -1;
 
       std::string prev{};
       std::string diff{};
@@ -45,8 +48,8 @@ namespace incpp
 
       std::array<uint8_t, 4> ip_address{};
 
-      std::vector<int32_t> last_requests{};
-      std::map<int32_t, Request> requests{};
+      std::vector<std::string> last_requests{};
+      std::unordered_map<std::string, Request> requests{};
 
       std::string buf{}; // buffer
       std::string prev{}; // previous buffer
@@ -72,24 +75,6 @@ namespace incpp
       // etc.
    };
 
-   // shorthand for string_view from var
-   template <class T>
-   inline std::string_view view(T& v)
-   {
-      if constexpr (std::same_as<std::decay_t<T>, std::string>) {
-         return std::string_view{v.data(), v.size()};
-      }
-      return std::string_view{(char*)(&v), sizeof(v)};
-   }
-
-   template <class T>
-   inline std::string_view view(T&& v)
-   {
-      static T t;
-      t = std::move(v);
-      return std::string_view{(char*)(&t), sizeof(t)};
-   }
-
    template <bool SSL>
    struct Incppect
    {
@@ -104,7 +89,7 @@ namespace incpp
          }
       }
 
-      int32_t unique_id = 1;
+      int32_t unique_client_id = 1;
 
       enum struct event : uint8_t {
          connect,
@@ -112,7 +97,6 @@ namespace incpp
          custom,
       };
 
-      using getter_t = std::function<std::string_view(const std::vector<int>& idxs)>;
       using handler_t = std::function<void(int32_t client_id, event etype, std::string_view)>;
 
       struct PerSocketData final
@@ -124,11 +108,8 @@ namespace incpp
 
       Parameters parameters{};
 
-      double tx_count{};
-      double rx_count{};
-
-      std::unordered_map<std::string, int> pathToGetter{};
-      std::vector<getter_t> getters{};
+      double tx_bytes{};
+      double rx_bytes{};
 
       uWS::Loop* main_loop{};
       us_listen_socket_t* listen_socket{};
@@ -143,23 +124,27 @@ namespace incpp
       struct glaze 
       {
          using T = Incppect;
+         static constexpr std::string_view name = "glue";
          static constexpr auto n_clients = [](auto& s) -> auto& {
             s.nclients = s.socket_data.size();
             return s.nclients;
          };
-         //static constexpr auto value = glz::object("nclients", n_clients, &T::tx_count, &T::rx_count, &T::ip_address);
+         static constexpr auto value = glz::object("nclients", n_clients, &T::tx_bytes, &T::rx_bytes, &T::client_data);
       };
+
+      static constexpr glz::opts glz_opts{.format = glz::binary};
+      glz::repe::registry<glz_opts> registry{};
+      
+      static constexpr std::string_view empty_path = "";
+
+      template <const std::string_view& Root = empty_path>
+      void on(auto& value) {
+         registry.on<Root>(value);
+      }
 
       Incppect()
       {
-         var("/incppect/nclients", [this](const std::vector<int>&) { return view(socket_data.size()); });
-         var("/incppect/tx_total", [this](const std::vector<int>&) { return view(tx_count); });
-         var("/incppect/rx_total", [this](const std::vector<int>&) { return view(rx_count); });
-         var("/incppect/ip_address/{}", [this](const std::vector<int>& idxs) {
-            auto it = client_data.cbegin();
-            std::advance(it, idxs[0]);
-            return view(it->second.ip_address);
-         });
+         on<glz::root<"/glue">>(*this);
       }
 
       // run the incppect service main loop in the current thread
@@ -200,21 +185,6 @@ namespace incpp
          return std::async([this, p = std::forward<Params>(params)]() { run(p); });
       }
 
-      // define variable/memory to inspect
-      //
-      // examples:
-      //
-      //   var("path0", [](auto ) { ... });
-      //   var("path1[%d]", [](auto idxs) { ... idxs[0] ... });
-      //   var("path2[%d].foo[%d]", [](auto idxs) { ... idxs[0], idxs[1] ... });
-      //
-      bool var(const std::string& path, getter_t&& getter)
-      {
-         pathToGetter[path] = getters.size();
-         getters.emplace_back(std::move(getter));
-         return true;
-      }
-
       // get global instance
       static Incppect& getInstance()
       {
@@ -234,9 +204,9 @@ namespace incpp
          wsBehaviour.maxPayloadLength = parameters.max_payload;
          wsBehaviour.idleTimeout = parameters.t_idle_timeout_s;
          wsBehaviour.open = [&](auto* ws) {
-            ++unique_id;
+            ++unique_client_id;
 
-            auto& cd = client_data[unique_id];
+            auto& cd = client_data[unique_client_id];
             cd.t_connected_ms = timestamp();
 
             auto addressBytes = ws->getRemoteAddress();
@@ -246,106 +216,39 @@ namespace incpp
             cd.ip_address[3] = addressBytes[15];
 
             PerSocketData* sd = ws->getUserData();
-            sd->client_id = unique_id;
+            sd->client_id = unique_client_id;
             sd->ws = ws;
             sd->main_loop = uWS::Loop::get();
 
-            socket_data.emplace(unique_id, sd);
+            socket_data.emplace(unique_client_id, sd);
 
             print("[incppect] client with id = {} connected\n", sd->client_id);
 
             if (handler) {
-               handler(sd->client_id, event::connect, {(const char*)cd.ip_address.data(), 4});
+               handler(sd->client_id, event::connect, {(const char*)cd.ip_address.data(), cd.ip_address.size()});
             }
          };
+         
          wsBehaviour.message = [this](auto* ws, std::string_view message, uWS::OpCode /*opCode*/) {
-            rx_count += message.size();
-            if (message.size() < sizeof(int)) {
-               return;
-            }
-
-            int32_t type;
-            std::memcpy(&type, message.data(), sizeof(type));
-
-            bool do_update = true;
-
+            rx_bytes += message.size();
+            
             PerSocketData* sd = ws->getUserData();
             auto& cd = client_data[sd->client_id];
-
-            switch (type) {
-            case 1: {
-               std::stringstream ss(message.data() + 4);
-               while (true) {
-                  Request request;
-
-                  std::string path;
-                  ss >> path;
-                  if (ss.eof()) break;
-                  int req_id = 0;
-                  ss >> req_id;
-                  int nidxs = 0;
-                  ss >> nidxs;
-                  for (int i = 0; i < nidxs; ++i) {
-                     int idx = 0;
-                     ss >> idx;
-                     if (idx == -1) idx = sd->client_id;
-                     request.idxs.push_back(idx);
-                  }
-
-                  if (pathToGetter.contains(path)) {
-                     print("[incppect] req_id = {}, path = '{}', nidxs = {}\n", req_id, path, nidxs);
-                     request.getter_id = pathToGetter[path];
-
-                     cd.requests[req_id] = std::move(request);
-                  }
-                  else {
-                     print("[incppect] missing path '{}'\n", path);
-                  }
-               }
-               break;
+            
+            constexpr glz::opts opts{.format = glz::binary, .partial_read = true};
+            std::tuple<glz::repe::header, glz::raw_json> repe_message;
+            auto ec = glz::read<opts>(repe_message, message);
+            if (ec) {
+               print("Error reading header");
+               return;
             }
-            case 2: {
-               const size_t n_requests = (message.size() - sizeof(int32_t)) / sizeof(int32_t);
-               if (n_requests * sizeof(int32_t) + sizeof(int32_t) != message.size()) {
-                  print("[incppect] error : invalid message data!\n");
-                  return;
-               }
-               print("[incppect] received requests: {}\n", n_requests);
-
-               cd.last_requests.clear();
-               for (size_t i = 0; i < n_requests; ++i) {
-                  int32_t req_id;
-                  std::memcpy(&req_id, message.data() + 4 * (i + 1), sizeof(req_id));
-                  if (cd.requests.contains(req_id)) {
-                     cd.last_requests.emplace_back(req_id);
-                     cd.requests[req_id].t_last_req_ms = timestamp();
-                     cd.requests[req_id].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
-                  }
-               }
-               break;
+            
+            auto&[header, body] = repe_message;
+            
+            if (header.method == "/requests") {
+               glz::ex::read_binary(cd.requests, body);
             }
-            case 3: {
-               for (auto req_id : cd.last_requests) {
-                  if (cd.requests.contains(req_id)) {
-                     cd.requests[req_id].t_last_req_ms = timestamp();
-                     cd.requests[req_id].t_last_req_timeout_ms = parameters.t_last_req_timeout_ms;
-                  }
-               }
-               break;
-            }
-            case 4: {
-               do_update = false;
-               if (handler && message.size() > sizeof(int32_t)) {
-                  handler(sd->client_id, event::custom,
-                          {message.data() + sizeof(int32_t), message.size() - sizeof(int32_t)});
-               }
-               break;
-            }
-            default:
-               print("[incppect] unknown message type: {}\n", type);
-            };
-
-            if (do_update) {
+            else (header.method == "/update") {
                sd->main_loop->defer([this] { this->update(); });
             }
          };
@@ -460,6 +363,7 @@ namespace incpp
       void update()
       {
          for (auto& [client_id, cd] : client_data) {
+            // Waiting for the buffer to clear
             if (socket_data[client_id]->ws->getBufferedAmount()) {
                print(
                   "[incppect] warning: buffered amount = {}, not sending updates to client {}. waiting for buffer to "
@@ -474,11 +378,13 @@ namespace incpp
 
             buf.clear();
 
-            uint32_t typeAll = 0;
-            buf.append((char*)(&typeAll), sizeof(typeAll));
+            uint32_t type_all = 0;
+            buf.append((char*)(&type_all), sizeof(type_all));
 
             for (auto& [req_id, req] : cd.requests) {
-               auto& getter = getters[req.getter_id];
+               std::string_view path = req.path;
+               path.remove_prefix(1);
+               auto& getter = access[req.path.substr(0, path.find('/'))];
                const auto t = timestamp();
                if (((req.t_last_req_timeout_ms < 0 && req.t_last_req_ms > 0) ||
                     (t - req.t_last_req_ms < req.t_last_req_timeout_ms)) &&
@@ -487,7 +393,8 @@ namespace incpp
                      req.t_last_req_ms = 0;
                   }
 
-                  req.cur = getter(req.idxs);
+                  path.remove_prefix(1);
+                  req.cur = getter(path);
                   req.t_last_update_ms = t;
 
                   constexpr int kPadding = 4;
@@ -584,8 +491,8 @@ namespace incpp
                   uint32_t n = 0;
                   diff.clear();
 
-                  uint32_t typeAll = 1;
-                  diff.append((char*)(&typeAll), sizeof(typeAll));
+                  uint32_t type_all = 1;
+                  diff.append((char*)(&type_all), sizeof(type_all));
 
                   for (int i = 4; i < (int)buf.size(); i += 4) {
                      std::memcpy(&a, prev.data() + i, sizeof(uint32_t));
@@ -634,7 +541,7 @@ namespace incpp
                   }
                }
 
-               tx_count += buf.size();
+               tx_bytes += buf.size();
 
                prev = buf;
             }

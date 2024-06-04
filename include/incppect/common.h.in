@@ -8,6 +8,8 @@
 // the main js module
 constexpr auto kIncppect_js = R"js(
 
+@src_beve_js@
+
 @src_incppect_js@
 
 )js";
