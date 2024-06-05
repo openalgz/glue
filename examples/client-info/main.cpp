@@ -3,6 +3,7 @@
  *  \author Georgi Gerganov
  */
 #include "examples-common.h"
+#include "localhost-root-path.hpp"
 
 using incppect = incpp::Incppect<false>;
 namespace fs = std::filesystem;
@@ -13,7 +14,8 @@ int main(int argc, char ** argv) {
 
     int port = argc > 1 ? atoi(argv[1]) : 3004;
  
-    auto parameters = configure_incppect_example(argc, argv, "client-info", port);
+   std::string http_route = localhost_root_path;
+   auto parameters = configure_incppect_example(argc, argv, http_route, port);
 
     auto future = incppect::getInstance().run_async(parameters);
 

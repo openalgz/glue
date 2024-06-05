@@ -45,3 +45,4 @@ $RECYCLE.BIN/
 ehthumbs.db
 Thumbs.db
 *.json
+localhost-root-path.hpp

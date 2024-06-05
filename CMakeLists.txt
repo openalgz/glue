@@ -22,6 +22,16 @@ macro(hide_warnings)
     endif()
 endmacro()
 
+set(template_path "${CMAKE_CURRENT_SOURCE_DIR}/include/localhost-root-path.in.hpp")
+get_filename_component(template_path "${template_path}" ABSOLUTE)
+
+macro(assign_local_host_root_path project_folder)
+    set(http_root_dir "\"${CMAKE_CURRENT_SOURCE_DIR}\"")
+    set(output_path "${CMAKE_CURRENT_SOURCE_DIR}/localhost-root-path.hpp")
+    configure_file("${template_path}" "${output_path}" @ONLY)
+endmacro()
+
+
 hide_warnings()
 
 if (IMGUI_WS_ALL_WARNINGS AND (CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))

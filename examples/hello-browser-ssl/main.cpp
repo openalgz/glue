@@ -4,6 +4,7 @@
  */
 
 #include "examples-common.h"
+#include "localhost-root-path.hpp"
 
 namespace fs = std::filesystem;
 using namespace examples;
@@ -15,9 +16,9 @@ int main(int argc, char** argv)
 {
    printf("Usage: %s [port] [http_root]\n", argv[0]);
 
-   int port = argc > 1 ? atoi(argv[1]) : 3000;
-
-   auto parameters = configure_incppect_example(argc, argv, "hello-browser-ssl", port);
+   int port = argc > 1 ? atoi(argv[1]) : 3011;
+   std::string http_route = localhost_root_path;
+   auto parameters = configure_incppect_example(argc, argv, http_route, port);
 
    // make sure you have generated those and they are valid
    parameters.ssl_key = "key.pem";
