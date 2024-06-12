@@ -118,7 +118,7 @@ namespace incpp
       struct PerSocketData final
       {
          int32_t client_id{};
-         uWS::Loop* main_loop{};
+         uWS::Loop* thread_loop{};
          uWS::WebSocket<SSL, true, PerSocketData>* ws{};
       };
 
@@ -161,6 +161,9 @@ namespace incpp
             return view(it->second.ip_address);
          });
       }
+      ~Incppect() {
+         stop();
+      }
 
       // run the incppect service main loop in the current thread
       // blocking call
@@ -173,11 +176,11 @@ namespace incpp
       // terminate the server instance
       void stop()
       {
-         if (main_loop != nullptr) {
+         if (main_loop) {
             main_loop->defer([this]() {
-               for (auto sd : socket_data) {
-                  if (sd.second->main_loop != nullptr) {
-                     sd.second->main_loop->defer([sd]() { sd.second->ws->close(); });
+               for (auto [id, sd] : socket_data) {
+                  if (sd->thread_loop) {
+                     sd->thread_loop->defer([sd] { sd->ws->close(); });
                   }
                }
                us_listen_socket_close(0, listen_socket);
@@ -248,7 +251,7 @@ namespace incpp
             PerSocketData* sd = ws->getUserData();
             sd->client_id = unique_id;
             sd->ws = ws;
-            sd->main_loop = uWS::Loop::get();
+            sd->thread_loop = uWS::Loop::get();
 
             socket_data.emplace(unique_id, sd);
 
@@ -346,7 +349,7 @@ namespace incpp
             };
 
             if (do_update) {
-               sd->main_loop->defer([this] { this->update(); });
+               sd->thread_loop->defer([this] { this->update(); });
             }
          };
          wsBehaviour.drain = [this](auto* ws) {
