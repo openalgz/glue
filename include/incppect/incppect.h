@@ -6,6 +6,7 @@
 #include <fstream>
 #include <functional>
 #include <future>
+#include <latch>
 #include <map>
 #include <sstream>
 #include <thread>
