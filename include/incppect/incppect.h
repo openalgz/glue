@@ -13,7 +13,6 @@
 
 #include "App.h" // uWebSockets
 #include "common.h"
-
 #include "glaze/glaze.hpp"
 
 namespace incpp
@@ -140,14 +139,15 @@ namespace incpp
 
       handler_t handler{};
 
-      struct glaze 
+      struct glaze
       {
          using T = Incppect;
          static constexpr auto n_clients = [](auto& s) -> auto& {
             s.nclients = s.socket_data.size();
             return s.nclients;
          };
-         //static constexpr auto value = glz::object("nclients", n_clients, &T::tx_count, &T::rx_count, &T::ip_address);
+         // static constexpr auto value = glz::object("nclients", n_clients, &T::tx_count, &T::rx_count,
+         // &T::ip_address);
       };
 
       Incppect()
@@ -161,9 +161,7 @@ namespace incpp
             return view(it->second.ip_address);
          });
       }
-      ~Incppect() {
-         stop();
-      }
+      ~Incppect() { stop(); }
 
       // run the incppect service main loop in the current thread
       // blocking call
@@ -177,14 +175,20 @@ namespace incpp
       void stop()
       {
          if (main_loop) {
-            main_loop->defer([this]() {
+            std::latch completion_latch(1);
+
+            main_loop->defer([this, &completion_latch]() {
                for (auto [id, sd] : socket_data) {
                   if (sd->thread_loop) {
                      sd->thread_loop->defer([sd] { sd->ws->close(); });
                   }
                }
                us_listen_socket_close(0, listen_socket);
+
+               completion_latch.count_down();
             });
+
+            completion_latch.wait();
          }
       }
 
