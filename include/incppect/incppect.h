@@ -18,6 +18,51 @@
 
 namespace incpp
 {
+
+   struct timed_latch_t
+   {
+      explicit timed_latch_t(int count) : count_{count} {}
+
+      void count_down()
+      {
+         std::lock_guard<std::mutex> lock(mutex_);
+         if (count_ > 0) {
+            --count_;
+            if (count_ == 0) {
+               cv_.notify_all();
+            }
+         }
+      }
+
+      // Returns true if the latch reached zero, false if the timeout expired.
+      bool wait_for(std::chrono::milliseconds timeout)
+      {
+         std::unique_lock<std::mutex> lock(mutex_);
+         return cv_.wait_for(lock, timeout, [this] { return count_ == 0; });
+      }
+
+     private:
+      int count_;
+      std::mutex mutex_;
+      std::condition_variable cv_;
+   };
+   /*
+      int test_time_latch()
+      {
+         timed_latch_t latch(1);
+
+         // Example usage: wait for at most 1 second.
+         if (latch.wait_for(std::chrono::milliseconds(1000))) {
+            std::cout << "Latch reached zero.\n";
+         }
+         else {
+            std::cout << "Timeout waiting for latch.\n";
+         }
+
+         return 0;
+      }
+   */
+
    inline int64_t timestamp()
    {
       using namespace std::chrono;
@@ -176,7 +221,7 @@ namespace incpp
       void stop()
       {
          if (main_loop) {
-            std::latch completion_latch(1);
+            timed_latch_t completion_latch(1);
 
             main_loop->defer([this, &completion_latch]() {
                for (auto [id, sd] : socket_data) {
@@ -189,7 +234,11 @@ namespace incpp
                completion_latch.count_down();
             });
 
-            completion_latch.wait();
+            // Wait for at most 1 second for the latch to be released.
+            if (!completion_latch.wait_for(std::chrono::seconds(1))) {
+               std::cerr << "'incppect stop timeout while waiting for completion latch.\n";
+               std::quick_exit(EXIT_FAILURE);
+            }
          }
       }
 
