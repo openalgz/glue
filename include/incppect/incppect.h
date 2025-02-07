@@ -236,7 +236,7 @@ namespace incpp
 
             // Wait for at most 1 second for the latch to be released.
             if (!completion_latch.wait_for(std::chrono::seconds(1))) {
-               std::cerr << "'incppect stop timeout while waiting for completion latch.\n";
+               std::cerr << "'incppect' stop failed: a latch timeout occurred while waiting for 'sd->thread_loop->defer([sd] { sd->ws->close(); });'.\n";
                std::quick_exit(EXIT_FAILURE);
             }
          }
